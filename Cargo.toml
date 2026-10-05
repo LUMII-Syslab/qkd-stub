@@ -1,0 +1,22 @@
+[package]
+name = "qkd-stub"
+version = "0.1.0"
+edition = "2024"
+description = "Independent deterministic ETSI GS QKD 014 HTTPS test endpoints"
+license = "MIT"
+
+[dependencies]
+axum = "0.8"
+axum-server = { version = "0.8", features = ["tls-rustls-no-provider"] }
+base64 = "0.22"
+clap = { version = "4", features = ["derive"] }
+getrandom = "0.3"
+rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha3 = "0.10"
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "signal", "time"] }
+uuid = "1"
+
+[dev-dependencies]
+tower = { version = "0.5", features = ["util"] }
