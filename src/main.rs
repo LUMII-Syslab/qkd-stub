@@ -1,20 +1,34 @@
-use axum_server::{Handle, tls_rustls::RustlsConfig};
+use axum_server::Handle;
 use clap::Parser;
-use qkd_stub::{Config, app};
-use std::{net::SocketAddr, path::PathBuf, time::Duration};
+use qkd_stub::{
+    Config, app,
+    auth::{Registry, certificate_selectors},
+    tls::{self, IdentityAcceptor},
+};
+use rustls::pki_types::{CertificateDer, pem::PemObject};
+use std::{net::SocketAddr, path::PathBuf, sync::Arc, time::Duration};
 
 #[derive(Parser)]
 #[command(
     version,
-    about = "HTTPS ETSI QKD 014 test stub. Keys are publicly reproducible; no authentication."
+    about = "HTTPS ETSI QKD 014 test stub. Publicly reproducible keys; optional certificate-based SAE authorization."
 )]
 struct Args {
     #[arg(long, default_value = "127.0.0.1:8443")]
     listen: SocketAddr,
-    #[arg(long)]
-    tls_cert: PathBuf,
-    #[arg(long)]
-    tls_key: PathBuf,
+    #[arg(long, required_unless_present = "inspect_cert")]
+    tls_cert: Option<PathBuf>,
+    #[arg(long, required_unless_present = "inspect_cert")]
+    tls_key: Option<PathBuf>,
+    /// Enable client certificate verification using this PEM CA bundle.
+    #[arg(long, requires = "sae_map")]
+    tls_client_ca: Option<PathBuf>,
+    /// JSON SAE registry and certificate identity mapping (requires mutual TLS).
+    #[arg(long, requires = "tls_client_ca")]
+    sae_map: Option<PathBuf>,
+    /// Print certificate identity selectors for use in an SAE mapping, then exit.
+    #[arg(long, conflicts_with_all = ["tls_cert", "tls_key", "tls_client_ca", "sae_map"])]
+    inspect_cert: Option<PathBuf>,
     #[arg(long, default_value = "sae-local")]
     sae_id: String,
     #[arg(long, default_value = "kme-local")]
@@ -26,12 +40,36 @@ struct Args {
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
+    if let Some(path) = &args.inspect_cert {
+        let cert = CertificateDer::pem_file_iter(path)?
+            .next()
+            .ok_or("certificate PEM file is empty")??;
+        println!(
+            "{}",
+            serde_json::to_string_pretty(
+                &serde_json::json!({"identities": certificate_selectors(cert.as_ref())?})
+            )?
+        );
+        return Ok(());
+    }
+    let registry = args
+        .sae_map
+        .as_ref()
+        .map(|path| -> Result<_, Box<dyn std::error::Error>> {
+            Ok(Arc::new(Registry::from_json(&std::fs::read_to_string(
+                path,
+            )?)?))
+        })
+        .transpose()?;
     rustls::crypto::ring::default_provider()
         .install_default()
         .map_err(|_| "could not install TLS crypto provider")?;
-    let tls = RustlsConfig::from_pem_file(&args.tls_cert, &args.tls_key)
-        .await
-        .map_err(|e| format!("cannot load TLS certificate/key: {e}"))?;
+    let tls = tls::config(
+        args.tls_cert.as_deref().ok_or("--tls-cert is required")?,
+        args.tls_key.as_deref().ok_or("--tls-key is required")?,
+        args.tls_client_ca.as_deref(),
+    )
+    .map_err(|e| format!("cannot load TLS configuration: {e}"))?;
     let handle = Handle::new();
     let shutdown = handle.clone();
     tokio::spawn(async move {
@@ -49,13 +87,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         shutdown.graceful_shutdown(Some(Duration::from_secs(5)));
     });
     eprintln!(
-        "QKD test stub at https://{} (publicly reproducible keys; no client authentication)",
-        args.listen
+        "QKD test stub at https://{} (publicly reproducible keys; {})",
+        args.listen,
+        if registry.is_some() {
+            "certificate-based SAE authorization enabled"
+        } else {
+            "no client authentication"
+        }
     );
-    axum_server::bind_rustls(args.listen, tls)
+    axum_server::bind(args.listen)
+        .acceptor(IdentityAcceptor::new(tls, registry.clone()))
         .handle(handle)
         .serve(
             app(Config {
+                auth: registry,
                 sae_id: args.sae_id,
                 kme_id: args.kme_id,
                 peer_kme_id: args.peer_kme_id,
