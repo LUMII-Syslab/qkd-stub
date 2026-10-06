@@ -7,12 +7,7 @@ use std::{
 use x509_parser::{extensions::GeneralName, prelude::*};
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq, Hash)]
-#[serde(
-    tag = "field",
-    content = "value",
-    rename_all = "snake_case",
-    deny_unknown_fields
-)]
+#[serde(rename_all = "snake_case")]
 pub enum Selector {
     SubjectDn(String),
     SanDns(String),
@@ -21,6 +16,12 @@ pub enum Selector {
     SanIp(String),
 }
 impl Selector {
+    /// Inline TOML table, e.g. `{ subject_dn = "CN=client-a" }`.
+    pub fn to_toml_inline(&self) -> Result<String, String> {
+        toml::Value::try_from(self)
+            .map(|v| v.to_string())
+            .map_err(|e| e.to_string())
+    }
     fn normalize(&self) -> Result<Self, String> {
         let value = match self {
             Self::SubjectDn(v)
@@ -47,6 +48,7 @@ impl Selector {
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct RegistryFile {
+    #[serde(rename = "sae", default)]
     saes: Vec<Sae>,
 }
 #[derive(Deserialize)]
@@ -65,9 +67,9 @@ pub struct Registry {
     identities: HashMap<Selector, u16>,
 }
 impl Registry {
-    pub fn from_json(json: &str) -> Result<Self, String> {
+    pub fn from_toml(text: &str) -> Result<Self, String> {
         let config: RegistryFile =
-            serde_json::from_str(json).map_err(|e| format!("invalid SAE mapping: {e}"))?;
+            toml::from_str(text).map_err(|e| format!("invalid SAE mapping: {e}"))?;
         if config.saes.is_empty() {
             return Err("SAE mapping must contain at least one SAE".into());
         }
@@ -217,21 +219,38 @@ mod tests {
     use super::*;
     #[test]
     fn reject_ambiguous_or_invalid_registry() {
-        for json in [
-            r#"{"saes":[]}"#,
-            r#"{"saes":[{"id":"A","code":0}]}"#,
-            r#"{"saes":[{"id":"A","code":1},{"id":"B","code":1}]}"#,
-            r#"{"saes":[{"id":"A","code":1},{"id":"A","code":2}]}"#,
-            r#"{"saes":[{"id":"A","code":1,"identities":[{"field":"san_dns","value":"A.local"}]},{"id":"B","code":2,"identities":[{"field":"san_dns","value":"a.LOCAL"}]}]}"#,
-            r#"{"saes":[{"id":"A","code":1,"identities":[{"field":"san_ip","value":"no"}]}]}"#,
-            r#"{"saes":[{"id":"A","code":1,"typo":true}]}"#,
+        for toml in [
+            "",
+            "[[sae]]\nid = 'A'\ncode = 0",
+            "[[sae]]\nid = 'A'\ncode = 1\n[[sae]]\nid = 'B'\ncode = 1",
+            "[[sae]]\nid = 'A'\ncode = 1\n[[sae]]\nid = 'A'\ncode = 2",
+            "[[sae]]\nid = 'A'\ncode = 1\nidentities = [{ san_dns = 'A.local' }]\n\
+             [[sae]]\nid = 'B'\ncode = 2\nidentities = [{ san_dns = 'a.LOCAL' }]",
+            "[[sae]]\nid = 'A'\ncode = 1\nidentities = [{ san_ip = 'no' }]",
+            "[[sae]]\nid = 'A'\ncode = 1\ntypo = true",
+            "[[sae]]\nid = 'A'\ncode = 1\nidentities = [{ san_dns = 'a', san_uri = 'b' }]",
+            "[[sae]]\nid = 'A'\ncode = 1\nidentities = [{ unknown = 'a' }]",
+            "[[sae]]\nid = 'A'\ncode = 1\nidentities = [{ san_dns = '' }]",
+            r#"{"saes":[{"id":"A","code":1}]}"#,
         ] {
-            assert!(Registry::from_json(json).is_err(), "{json}");
+            assert!(Registry::from_toml(toml).is_err(), "{toml}");
         }
-        let r =
-            Registry::from_json(r#"{"saes":[{"id":"A","code":1},{"id":"B","code":2}]}"#).unwrap();
+        let r = Registry::from_toml(
+            "# comment\n[[sae]]\nid = 'A'\ncode = 1\n[[sae]]\nid = 'B'\ncode = 2",
+        )
+        .unwrap();
         assert_eq!(r.code("A"), Some(1));
         assert_eq!(r.id(2), Some("B"));
         assert_eq!(r.code("unknown"), None);
+    }
+
+    #[test]
+    fn selectors_round_trip_through_toml() {
+        let dn = Selector::SubjectDn(r#"CN=client-a\,OU\=Other,O=Example"#.into());
+        let inline = dn.to_toml_inline().unwrap();
+        assert!(inline.starts_with("{ subject_dn = "), "{inline}");
+        let text = format!("[[sae]]\nid = 'A'\ncode = 1\nidentities = [{inline}]");
+        let r = Registry::from_toml(&text).unwrap();
+        assert_eq!(r.identities.get(&dn), Some(&1));
     }
 }

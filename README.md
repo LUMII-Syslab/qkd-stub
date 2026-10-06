@@ -15,7 +15,7 @@ from their UUIDs. UUID metadata is public.
 
 ## Build and quickstart
 
-Requirements: stable Rust (tested with 1.95), a C compiler, OpenSSL, Python 3,
+Requirements: stable Rust (tested with 1.95), a C compiler, OpenSSL, Python 3.11+ (tests use `tomllib`),
 and curl. Run from this directory:
 
 ```sh
@@ -37,13 +37,13 @@ Start each server in its own terminal:
 ./target/release/qkd-stub --listen 127.0.0.1:8443 \
   --tls-cert pki/server.crt --tls-key pki/server.key \
   --psk-file pki/shared.psk \
-  --tls-client-ca pki/ca.crt --sae-map examples/sae-map.json \
+  --tls-client-ca pki/ca.crt --sae-map examples/sae-map.toml \
   --kme-id KME-A --peer-kme-id KME-B
 
 ./target/release/qkd-stub --listen 127.0.0.1:8444 \
   --tls-cert pki/server.crt --tls-key pki/server.key \
   --psk-file pki/shared.psk \
-  --tls-client-ca pki/ca.crt --sae-map examples/sae-map.json \
+  --tls-client-ca pki/ca.crt --sae-map examples/sae-map.toml \
   --kme-id KME-B --peer-kme-id KME-A
 ```
 
@@ -160,16 +160,23 @@ subject DN or a supported SAN is matched against the configured SAE registry.
 Missing, untrusted, expired, or wrong-purpose certificates fail the TLS handshake;
 valid certificates with no mapping or conflicting SAE mappings receive HTTP 401.
 
-The example registry is in [`examples/sae-map.json`](examples/sae-map.json):
+The example registry is in [`examples/sae-map.toml`](examples/sae-map.toml):
 
-```json
-{
-  "saes": [
-    {"id":"A", "code":1, "identities":[{"field":"subject_dn", "value":"CN=client-a"}]},
-    {"id":"B", "code":2, "identities":[{"field":"san_uri", "value":"urn:qkd:sae:B"}]}
-  ]
-}
+```toml
+[[sae]]
+id = "A"
+code = 1
+identities = [{ subject_dn = "CN=client-a" }]
+
+[[sae]]
+id = "B"
+code = 2
+identities = [{ san_uri = "urn:qkd:sae:B" }]
 ```
+
+Each `[[sae]]` entry has `id`, `code`, and optional `identities`. Each identity is
+an inline table with exactly one selector field (see below). Use TOML literal
+strings (`'...'`) for DNs containing backslashes. Unknown keys are rejected.
 
 Both simulators must assign the **same unique numeric code to each SAE ID**.
 Codes are integers from 1 to 65,535. Keep assignments stable while any key IDs may
@@ -190,13 +197,14 @@ There is no additional pair allowlist.
 ### Certificate mapping rules
 
 Use the built-in inspector to obtain exact selector values from an existing
-certificate; it prints metadata only and does not verify trust:
+certificate; it prints metadata only, does not verify trust, and its output is an
+`identities = [...]` line to paste into an `[[sae]]` entry:
 
 ```sh
 ./target/release/qkd-stub --inspect-cert path/to/client.crt
 ```
 
-Supported `field` values are `subject_dn`, `san_dns`, `san_uri`, `san_email`, and
+Supported selector fields are `subject_dn`, `san_dns`, `san_uri`, `san_email`, and
 `san_ip`. DN, URI, and email matching is exact and case-sensitive. DNS matching is
 ASCII case-insensitive; IP addresses are normalized. There are no wildcard,
 substring, or regex matches. DN values use a deterministic RFC4514-style rendering
@@ -218,7 +226,7 @@ key IDs when the replacement certificate maps to the same SAE code.
 --tls-key FILE         Required unencrypted server PEM private key
 --psk-file FILE        Required: exactly 32 raw bytes
 --tls-client-ca FILE   Required unless --no-sae-binding: client CA PEM bundle
---sae-map FILE         Required unless --no-sae-binding: SAE registry JSON
+--sae-map FILE         Required unless --no-sae-binding: SAE registry TOML
 --no-sae-binding       Explicitly disable client authentication/SAE checks
 --sae-id ID            Unrestricted-mode status fallback; default sae-local
 --kme-id ID            Default: kme-local

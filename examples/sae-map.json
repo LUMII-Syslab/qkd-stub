@@ -1,8 +1,0 @@
-{
-  "saes": [
-    {"id": "A", "code": 1, "identities": [{"field": "subject_dn", "value": "CN=client-a"}]},
-    {"id": "B", "code": 2, "identities": [{"field": "san_uri", "value": "urn:qkd:sae:B"}]},
-    {"id": "C", "code": 3, "identities": [{"field": "subject_dn", "value": "CN=client-c"}]},
-    {"id": "D", "code": 4, "identities": [{"field": "san_uri", "value": "urn:qkd:sae:D"}]}
-  ]
-}

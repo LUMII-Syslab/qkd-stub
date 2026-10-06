@@ -8,6 +8,7 @@ import ssl
 import subprocess
 import tempfile
 import time
+import tomllib
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -87,16 +88,17 @@ def main():
         client(pki, 'email', '/CN=email', 'email:sae-g@example.test')
         client(pki, 'escaped', '/O=Example/CN=client-a,OU=Other')
         client(pki, 'expired', '/CN=client-a', days=0)
-        mapping = json.loads((ROOT / 'examples/sae-map.json').read_text())
+        mapping = (ROOT / 'examples/sae-map.toml').read_text()
+        assert len(tomllib.loads(mapping)['sae']) == 4
         for i, name, field, value in [(5,'E','san_dns','sae-e.example'), (6,'F','san_ip','2001:0db8:0:0::1'), (7,'G','san_email','sae-g@example.test')]:
-            mapping['saes'].append({'id':name,'code':i,'identities':[{'field':field,'value':value}]})
-        for name, expected in [('client-a', {'field':'subject_dn','value':'CN=client-a'}),
-                               ('client-b', {'field':'san_uri','value':'urn:qkd:sae:B'}),
-                               ('escaped', {'field':'subject_dn','value':r'CN=client-a\,OU\=Other,O=Example'})]:
+            mapping += f'\n[[sae]]\nid = "{name}"\ncode = {i}\nidentities = [{{ {field} = "{value}" }}]\n'
+        for name, expected in [('client-a', {'subject_dn':'CN=client-a'}),
+                               ('client-b', {'san_uri':'urn:qkd:sae:B'}),
+                               ('escaped', {'subject_dn':r'CN=client-a\,OU\=Other,O=Example'})]:
             result = subprocess.run([str(BINARY), '--inspect-cert', str(pki / f'{name}.crt')], check=True, capture_output=True)
-            assert expected in json.loads(result.stdout)['identities'], result.stdout
-        map_path = root / 'saes.json'
-        map_path.write_text(json.dumps(mapping))
+            assert expected in tomllib.loads(result.stdout.decode())['identities'], result.stdout
+        map_path = root / 'saes.toml'
+        map_path.write_text(mapping)
         contexts = {name: context(pki, cert) for name, cert in [('A','client-a'), ('B','client-b'), ('C','client-c'), ('D','client-d'), ('E','dns'), ('F','ip'), ('G','email')]}
         untrusted = root / 'other-pki'
         subprocess.run([str(ROOT / 'scripts/gen-certs.sh'), str(untrusted), 'localhost'], check=True)

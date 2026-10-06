@@ -1,0 +1,30 @@
+# SAE registry. Read at startup; restart after changes.
+#
+# Both KMEs must assign the same unique code (1-65535) to every SAE ID.
+# Keep codes stable while any key ID may still be in use: changing a code
+# changes the meaning of existing IDs.
+#
+# `identities` are alternative certificate selectors. Supported fields:
+# subject_dn, san_dns, san_uri, san_email, san_ip. Get exact values with
+#   qkd-stub --inspect-cert client.crt
+# Remote-only SAEs may omit `identities`.
+
+[[sae]]
+id = "A"
+code = 1
+identities = [{ subject_dn = "CN=client-a" }]
+
+[[sae]]
+id = "B"
+code = 2
+identities = [{ san_uri = "urn:qkd:sae:B" }]
+
+[[sae]]
+id = "C"
+code = 3
+identities = [{ subject_dn = "CN=client-c" }]
+
+[[sae]]
+id = "D"
+code = 4
+identities = [{ san_uri = "urn:qkd:sae:D" }]

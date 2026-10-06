@@ -65,7 +65,7 @@ def main():
             with (root / 'server.log').open('w+') as log:
                 def start(port, path):
                     if bound:
-                        return mtls.start(port, pki, ROOT / 'examples/sae-map.json', log, ctx_a, path)
+                        return mtls.start(port, pki, ROOT / 'examples/sae-map.toml', log, ctx_a, path)
                     return https.start(port, pki, log, ctx_a, path)
 
                 try:

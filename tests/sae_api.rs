@@ -13,7 +13,9 @@ use std::sync::Arc;
 use tower::ServiceExt;
 
 fn registry() -> Arc<Registry> {
-    Arc::new(Registry::from_json(r#"{"saes":[{"id":"A","code":1},{"id":"B","code":2},{"id":"C","code":3},{"id":"D","code":4}]}"#).unwrap())
+    Arc::new(Registry::from_toml(
+            "[[sae]]\nid='A'\ncode=1\n[[sae]]\nid='B'\ncode=2\n[[sae]]\nid='C'\ncode=3\n[[sae]]\nid='D'\ncode=4",
+        ).unwrap())
 }
 async fn call(
     caller: Option<u16>,

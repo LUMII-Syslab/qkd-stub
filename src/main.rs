@@ -24,7 +24,7 @@ struct Args {
     /// PEM CA bundle for verifying client certificates (required unless --no-sae-binding).
     #[arg(long, requires = "sae_map", required_unless_present_any = ["no_sae_binding", "inspect_cert"], conflicts_with = "no_sae_binding")]
     tls_client_ca: Option<PathBuf>,
-    /// JSON SAE registry and certificate identity mapping (requires mutual TLS).
+    /// TOML SAE registry and certificate identity mapping (requires mutual TLS).
     #[arg(long, requires = "tls_client_ca", required_unless_present_any = ["no_sae_binding", "inspect_cert"], conflicts_with = "no_sae_binding")]
     sae_map: Option<PathBuf>,
     /// Shared secret file containing exactly 32 raw random bytes.
@@ -51,12 +51,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let cert = CertificateDer::pem_file_iter(path)?
             .next()
             .ok_or("certificate PEM file is empty")??;
-        println!(
-            "{}",
-            serde_json::to_string_pretty(
-                &serde_json::json!({"identities": certificate_selectors(cert.as_ref())?})
-            )?
-        );
+        println!("identities = [");
+        for selector in certificate_selectors(cert.as_ref())? {
+            println!("    {},", selector.to_toml_inline()?);
+        }
+        println!("]");
         return Ok(());
     }
     let psk_path = args.psk_file.as_ref().ok_or("--psk-file is required")?;
@@ -66,7 +65,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .sae_map
         .as_ref()
         .map(|path| -> Result<_, Box<dyn std::error::Error>> {
-            Ok(Arc::new(Registry::from_json(&std::fs::read_to_string(
+            Ok(Arc::new(Registry::from_toml(&std::fs::read_to_string(
                 path,
             )?)?))
         })
