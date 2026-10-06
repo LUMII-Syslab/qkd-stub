@@ -24,7 +24,7 @@ async fn call(
 ) -> (StatusCode, Value) {
     let router = app(Config {
         auth: Some(registry()),
-        ..Config::default()
+        ..Config::new(psk())
     });
     // The live server inserts this extension only after verifying the TLS peer.
     let router = match caller {
@@ -144,8 +144,8 @@ async fn independent_pairs_and_atomic_batch_authorization() {
 }
 
 #[tokio::test]
-async fn auth_mode_rejects_old_ids_and_anonymous_mode_rejects_bound_ids() {
-    let old = keys::generate(256).unwrap();
+async fn binding_rejects_unassigned_codes_and_opt_out_skips_authorization() {
+    let old = keys::generate(256, &psk()).unwrap();
     assert_eq!(
         call(
             Some(2),
@@ -164,16 +164,18 @@ async fn auth_mode_rejects_old_ids_and_anonymous_mode_rejects_bound_ids() {
             master: 1,
             slave: 2,
         },
+        &psk(),
     )
     .unwrap();
-    assert!(keys::derive(&bound.key_id).is_err());
+    assert_eq!(keys::derive(&bound.key_id, &psk()).unwrap().key, bound.key);
     assert!(matches!(
         keys::derive_bound(
             &bound.key_id,
             Parties {
                 master: 1,
                 slave: 3
-            }
+            },
+            &psk()
         ),
         Err(AccessError::Unauthorized)
     ));
@@ -186,12 +188,18 @@ fn bound_ids_preserve_pair_and_sizes() {
             master: 65535,
             slave: 2,
         };
-        let k = keys::generate_bound(size, pair).unwrap();
-        assert_eq!(keys::derive_bound(&k.key_id, pair).unwrap().key, k.key);
+        let k = keys::generate_bound(size, pair, &psk()).unwrap();
+        assert_eq!(
+            keys::derive_bound(&k.key_id, pair, &psk()).unwrap().key,
+            k.key
+        );
         let uuid = uuid::Uuid::parse_str(&k.key_id).unwrap();
-        assert_eq!(&uuid.as_bytes()[0..2], b"QA");
-        assert_eq!(&uuid.as_bytes()[4..6], &[255, 255]);
-        assert_eq!(&uuid.as_bytes()[10..12], &[0, 2]);
+        assert_eq!(
+            u16::from_be_bytes([uuid.as_bytes()[0], uuid.as_bytes()[1]]) as u32 * 8,
+            size
+        );
+        assert_eq!(&uuid.as_bytes()[2..4], &[255, 255]);
+        assert_eq!(&uuid.as_bytes()[4..6], &[0, 2]);
     }
     assert!(
         keys::generate_bound(
@@ -199,17 +207,23 @@ fn bound_ids_preserve_pair_and_sizes() {
             Parties {
                 master: 0,
                 slave: 2
-            }
+            },
+            &psk()
         )
         .is_err()
     );
     let k = keys::derive_bound(
-        "51410020-0001-8678-9abc-000212345678",
+        "00200001-0002-8678-9abc-def0123456b4",
         Parties {
             master: 1,
             slave: 2,
         },
+        &psk(),
     )
     .unwrap();
-    assert_eq!(k.key, "sx6nXvDWKRGtMIRlScPphJ86hrNSCQLPBOs/cyvF6aU=");
+    assert_eq!(k.key, "JT3926nJlkFON+iD/HgZVKA4ft8nPE+YrJSH8zvYSgw=");
+}
+
+fn psk() -> keys::Psk {
+    keys::Psk::new(&[7; 32]).unwrap()
 }

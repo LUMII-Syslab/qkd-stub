@@ -50,10 +50,11 @@ def fetch(port, path, ctx, body=None, header=None):
         return exc.code, json.load(exc)
 
 
-def start(port, pki, mapping, log, ctx):
+def start(port, pki, mapping, log, ctx, psk):
     proc = subprocess.Popen([str(BINARY), '--listen', f'127.0.0.1:{port}',
                              '--tls-cert', str(pki / 'server.crt'), '--tls-key', str(pki / 'server.key'),
-                             '--tls-client-ca', str(pki / 'ca.crt'), '--sae-map', str(mapping)], stdout=log, stderr=log)
+                             '--tls-client-ca', str(pki / 'ca.crt'), '--sae-map', str(mapping)]
+                            + ['--psk-file', str(psk)], stdout=log, stderr=log)
     for _ in range(100):
         if proc.poll() is not None:
             raise AssertionError(f'Server exited: {proc.returncode}')
@@ -70,6 +71,8 @@ def main():
     procs = []
     with tempfile.TemporaryDirectory(prefix='qkd-stub-mtls-') as tmp:
         root = Path(tmp)
+        psk = root / 'shared.psk'
+        psk.write_bytes(bytes([7]) * 32)
         pki = root / 'pki'
         subprocess.run([str(ROOT / 'scripts/gen-certs.sh'), str(pki), 'localhost', '127.0.0.1'], check=True)
         for name, uri in [('client-a', None), ('client-b', 'urn:qkd:sae:B'), ('client-c', None), ('client-d', 'urn:qkd:sae:D')]:
@@ -103,8 +106,8 @@ def main():
             b = free_port()
         with (root / 'server.log').open('w+') as log:
             try:
-                procs.append(start(a, pki, map_path, log, contexts['A']))
-                procs.append(start(b, pki, map_path, log, contexts['A']))
+                procs.append(start(a, pki, map_path, log, contexts['A'], psk))
+                procs.append(start(b, pki, map_path, log, contexts['A'], psk))
                 for name, ctx in contexts.items():
                     status, data = fetch(a, 'B/status', ctx, header='forged')
                     assert status == 200 and data['master_SAE_ID'] == name, (name, status, data)
@@ -131,10 +134,10 @@ def main():
                 mixed = {'key_IDs':[{'key_ID':id_ab}, {'key_ID':keys['C']['keys'][0]['key_ID']}]}
                 status, data = fetch(b, 'A/dec_keys', contexts['B'], mixed)
                 assert status == 401 and 'keys' not in data
-                old = '514b0020-1234-8678-9abc-def012345678'
+                old = '00200000-0000-8678-9abc-def012345679'
                 assert fetch(b, f'A/dec_keys?key_ID={old}', contexts['B'])[0] == 401
                 stop(procs.pop())
-                procs.append(start(b, pki, map_path, log, contexts['A']))
+                procs.append(start(b, pki, map_path, log, contexts['A'], psk))
                 assert fetch(b, f'A/dec_keys?key_ID={id_ab}', contexts['B'])[1]['keys'][0] == keys['A']['keys'][0]
                 # Multiple pairs in flight on the same two processes, both directions.
                 def roundtrip(pair):
@@ -162,7 +165,7 @@ def main():
                 for proc in procs:
                     stop(proc)
         for args in [['--tls-client-ca',str(pki/'ca.crt')], ['--sae-map',str(map_path)]]:
-            command = [str(BINARY), '--tls-cert', str(pki/'server.crt'), '--tls-key', str(pki/'server.key'), *args]
+            command = [str(BINARY), '--tls-cert', str(pki/'server.crt'), '--tls-key', str(pki/'server.key'), '--psk-file', str(psk), *args]
             result = subprocess.run(command, capture_output=True, timeout=5)
             assert result.returncode == 2, result.stderr
         print('PASS: opt-in flags must be supplied together; client certificate overwrite protection')

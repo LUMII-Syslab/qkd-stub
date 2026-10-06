@@ -3,7 +3,7 @@ pub mod keys;
 pub mod tls;
 
 use auth::{PeerIdentity, Registry};
-use keys::{AccessError, Parties};
+use keys::{AccessError, Parties, Psk};
 use std::sync::Arc;
 
 use axum::{
@@ -23,15 +23,17 @@ use serde_json::{Value, json};
 
 #[derive(Clone)]
 pub struct Config {
+    pub psk: Arc<Psk>,
     pub auth: Option<Arc<Registry>>,
     pub sae_id: String,
     pub kme_id: String,
     pub peer_kme_id: String,
 }
-impl Default for Config {
-    fn default() -> Self {
+impl Config {
+    pub fn new(psk: Psk) -> Self {
         Self {
             auth: None,
+            psk: Arc::new(psk),
             sae_id: "sae-local".into(),
             kme_id: "kme-local".into(),
             peer_kme_id: "kme-peer".into(),
@@ -166,7 +168,11 @@ struct Container {
     keys: Vec<Key>,
 }
 
-fn issue(request: KeyRequest, parties: Option<Parties>) -> Result<Json<Container>, ApiError> {
+fn issue(
+    request: KeyRequest,
+    parties: Option<Parties>,
+    psk: &Psk,
+) -> Result<Json<Container>, ApiError> {
     let number = request.number.unwrap_or(1) as usize;
     let size = request.size.unwrap_or(256);
     if !(1..=MAX_COUNT).contains(&number) {
@@ -186,8 +192,8 @@ fn issue(request: KeyRequest, parties: Option<Parties>) -> Result<Json<Container
     }
     let keys = (0..number)
         .map(|_| match parties {
-            Some(p) => keys::generate_bound(size, p),
-            None => keys::generate(size),
+            Some(p) => keys::generate_bound(size, p, psk),
+            None => keys::generate(size, psk),
         })
         .collect::<Result<Vec<_>, _>>()
         .map_err(|_| {
@@ -199,6 +205,7 @@ fn issue(request: KeyRequest, parties: Option<Parties>) -> Result<Json<Container
     Ok(Json(Container { keys }))
 }
 async fn enc_get(
+    State(c): State<Config>,
     sae: SaeRequest,
     query: Result<Query<EncQuery>, QueryRejection>,
 ) -> Result<Json<Container>, ApiError> {
@@ -210,9 +217,11 @@ async fn enc_get(
             ..Default::default()
         },
         sae.pair,
+        &c.psk,
     )
 }
 async fn enc_post(
+    State(c): State<Config>,
     sae: SaeRequest,
     body: Result<Json<Value>, JsonRejection>,
 ) -> Result<Json<Container>, ApiError> {
@@ -222,7 +231,7 @@ async fn enc_post(
             return Err(bad(format!("{field} must be an integer")));
         }
     }
-    issue(object_body(value)?, sae.pair)
+    issue(object_body(value)?, sae.pair, &c.psk)
 }
 fn object_body<T: serde::de::DeserializeOwned>(value: Value) -> Result<T, ApiError> {
     if !value.is_object() {
@@ -240,7 +249,11 @@ struct KeyIds {
     #[serde(rename = "key_IDs")]
     key_ids: Vec<KeyId>,
 }
-fn retrieve(ids: Vec<KeyId>, parties: Option<Parties>) -> Result<Json<Container>, ApiError> {
+fn retrieve(
+    ids: Vec<KeyId>,
+    parties: Option<Parties>,
+    psk: &Psk,
+) -> Result<Json<Container>, ApiError> {
     if !(1..=MAX_COUNT).contains(&ids.len()) {
         return Err(bad("key_IDs must contain between 1 and 128 IDs"));
     }
@@ -253,23 +266,26 @@ fn retrieve(ids: Vec<KeyId>, parties: Option<Parties>) -> Result<Json<Container>
                     master: pair.slave,
                     slave: pair.master,
                 },
+                psk,
             )
             .map_err(|e| match e {
                 AccessError::Invalid(message) => bad(message),
                 AccessError::Unauthorized => unauthorized(),
             }),
-            None => keys::derive(&id.key_id).map_err(bad),
+            None => keys::derive(&id.key_id, psk).map_err(bad),
         })
         .collect::<Result<Vec<_>, _>>()?;
     Ok(Json(Container { keys }))
 }
 async fn dec_get(
+    State(c): State<Config>,
     sae: SaeRequest,
     query: Result<Query<KeyId>, QueryRejection>,
 ) -> Result<Json<Container>, ApiError> {
-    retrieve(vec![query.map_err(query_error)?.0], sae.pair)
+    retrieve(vec![query.map_err(query_error)?.0], sae.pair, &c.psk)
 }
 async fn dec_post(
+    State(c): State<Config>,
     sae: SaeRequest,
     body: Result<Json<Value>, JsonRejection>,
 ) -> Result<Json<Container>, ApiError> {
@@ -279,5 +295,5 @@ async fn dec_post(
     {
         return Err(bad("each key_IDs entry must be a JSON object"));
     }
-    retrieve(object_body::<KeyIds>(value)?.key_ids, sae.pair)
+    retrieve(object_body::<KeyIds>(value)?.key_ids, sae.pair, &c.psk)
 }

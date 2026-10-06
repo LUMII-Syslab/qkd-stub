@@ -20,7 +20,7 @@ async fn request(
     if body.is_some() {
         req = req.header("Content-Type", "application/json");
     }
-    let res = app(Config::default())
+    let res = app(Config::new(psk()))
         .oneshot(req.body(Body::from(body.unwrap_or_default())).unwrap())
         .await
         .unwrap();
@@ -32,13 +32,16 @@ async fn request(
 }
 const ENC: &str = "/api/v1/keys/B/enc_keys";
 const DEC: &str = "/api/v1/keys/A/dec_keys";
-const VECTOR: &str = "514b0020-1234-8678-9abc-def012345678";
+const VECTOR: &str = "00200000-0000-8678-9abc-def012345679";
 
 #[test]
 fn fixed_vector_and_uuid_validation() {
-    let key = keys::derive(VECTOR).unwrap();
-    assert_eq!(key.key, "JfPEJ1sm6M8pfH4gkH8Cg3XZMB+GrfDs91tVTcYkRwo=");
-    assert_eq!(keys::derive(&VECTOR.to_uppercase()).unwrap().key, key.key);
+    let key = keys::derive(VECTOR, &psk()).unwrap();
+    assert_eq!(key.key, "nVsQbynRkkSHxR590PcH9EjAZfPx6vgYbS2iigrJgLE=");
+    assert_eq!(
+        keys::derive(&VECTOR.to_uppercase(), &psk()).unwrap().key,
+        key.key
+    );
     for id in [
         "",
         "invalid",
@@ -49,7 +52,7 @@ fn fixed_vector_and_uuid_validation() {
         "514b0000-1234-8678-9abc-def012345678",
         "514b2001-1234-8678-9abc-def012345678",
     ] {
-        assert!(keys::derive(id).is_err(), "{id}");
+        assert!(keys::derive(id, &psk()).is_err(), "{id}");
     }
 }
 
@@ -58,15 +61,15 @@ fn roundtrip_sizes_and_fresh_ids() {
     let mut ids = std::collections::HashSet::new();
     for size in [8, 16, 128, 256, 512, 1024, 65_536] {
         for _ in 0..20 {
-            let key = keys::generate(size).unwrap();
+            let key = keys::generate(size, &psk()).unwrap();
             assert!(ids.insert(key.key_id.clone()));
             assert_eq!(STANDARD.decode(&key.key).unwrap().len(), size as usize / 8);
-            assert_eq!(keys::derive(&key.key_id).unwrap().key, key.key);
+            assert_eq!(keys::derive(&key.key_id, &psk()).unwrap().key, key.key);
             let uuid = uuid::Uuid::parse_str(&key.key_id).unwrap();
             assert_eq!(uuid.as_bytes()[6] >> 4, 8);
             assert_eq!(uuid.as_bytes()[8] >> 6, 2);
             assert_eq!(
-                u16::from_be_bytes([uuid.as_bytes()[2], uuid.as_bytes()[3]]) as u32 * 8,
+                u16::from_be_bytes([uuid.as_bytes()[0], uuid.as_bytes()[1]]) as u32 * 8,
                 size
             );
         }
@@ -273,4 +276,8 @@ async fn routing_errors_are_json() {
         request("DELETE", ENC, None, None).await.0,
         StatusCode::METHOD_NOT_ALLOWED
     );
+}
+
+fn psk() -> keys::Psk {
+    keys::Psk::new(&[7; 32]).unwrap()
 }

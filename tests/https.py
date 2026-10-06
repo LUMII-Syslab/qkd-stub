@@ -32,10 +32,10 @@ def fetch(port, path, context, data=None):
         return json.load(response)
 
 
-def start(port, pki, log, context):
+def start(port, pki, log, context, psk):
     proc = subprocess.Popen(
         [str(BINARY), "--listen", f"127.0.0.1:{port}", "--tls-cert", str(pki / "server.crt"),
-         "--tls-key", str(pki / "server.key")], stdout=log, stderr=log)
+         "--tls-key", str(pki / "server.key"), "--no-sae-binding"] + ["--psk-file", str(psk)], stdout=log, stderr=log)
     for _ in range(100):
         if proc.poll() is not None:
             raise AssertionError(f"Server exited with {proc.returncode}")
@@ -70,21 +70,23 @@ def main():
         result = subprocess.run([str(ROOT / "scripts/gen-certs.sh"), str(pki), "localhost"], capture_output=True)
         assert result.returncode != 0
         assert original == {p.name: p.read_bytes() for p in pki.iterdir()}
+        psk = Path(temp) / "shared.psk"
+        psk.write_bytes(os.urandom(32))
         trusted = ssl.create_default_context(cafile=str(pki / "ca.crt"))
         a, b = free_port(), free_port()
         while b == a:
             b = free_port()
         with open(Path(temp) / "server.log", "w+") as log:
             try:
-                procs.append(start(a, pki, log, trusted))
-                procs.append(start(b, pki, log, trusted))
+                procs.append(start(a, pki, log, trusted, psk))
+                procs.append(start(b, pki, log, trusted, psk))
                 subprocess.run([str(ROOT / "scripts/smoke-test.sh"), str(pki / "ca.crt"),
                                 f"https://127.0.0.1:{a}", f"https://127.0.0.1:{b}"], check=True)
                 issued = fetch(a, "B/enc_keys?number=3&size=1024", trusted)
                 ids = {"key_IDs": [{"key_ID": k["key_ID"]} for k in issued["keys"]]}
                 assert fetch(b, "A/dec_keys", trusted, ids) == issued
                 stop(procs.pop())
-                procs.append(start(b, pki, log, trusted))
+                procs.append(start(b, pki, log, trusted, psk))
                 assert fetch(b, "unrelated-SAE/dec_keys", trusted, ids) == issued
                 for key in issued["keys"]:
                     assert len(base64.b64decode(key["key"], validate=True)) == 128
@@ -100,7 +102,7 @@ def main():
                     raise AssertionError("Untrusted certificate accepted")
                 # Invalid TLS paths fail at startup, before serving requests.
                 bad = subprocess.run([str(BINARY), "--tls-cert", str(pki / "missing.crt"),
-                                      "--tls-key", str(pki / "server.key")], capture_output=True, timeout=5)
+                                      "--tls-key", str(pki / "server.key"), "--psk-file", str(psk), "--no-sae-binding"], capture_output=True, timeout=5)
                 assert bad.returncode != 0 and b"cannot load TLS" in bad.stderr
                 print("PASS: restart retrieval, TLS 1.2/1.3, untrusted certificate rejection, invalid TLS configuration")
             except Exception:
