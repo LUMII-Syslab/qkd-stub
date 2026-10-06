@@ -1,11 +1,11 @@
 # QKD stub
 
-![QKD stub architecture: two independent endpoints derive the same SAE-bound key from a shared PSK and UUID.](docs/qkd-stub-architecture.drawio.png)
-
 Two independent Rust HTTPS servers simulate the ETSI GS QKD 014 V1.1.1 key
 delivery API. Application A obtains a key and UUID from its local stub, sends the
 UUID to application B, and B retrieves the same key from its own stub. The stubs
 never contact each other and need no shared database or synchronized clock.
+
+![Two clients obtain the same SAE-bound key from independent KME stubs using a shared PSK and UUID.](docs/qkd-client-flow.png)
 
 **PSK derivation is mandatory. Certificate-based SAE authorization is enabled by default.**
 Both servers need the same 32-byte random PSK and matching numeric SAE assignments.
@@ -88,12 +88,14 @@ Configuration is read at startup. Missing required flags, missing/unreadable
 files, or PSKs of the wrong length fail startup. There is no generated default
 PSK or silent fallback. `--inspect-cert` and `--help` need no server configuration.
 
-## UUID layout and derivation
+## UUID layout
 
 **Breaking change:** older `QK`, `QA`, `QP`, and `QB` UUIDs are unsupported;
 obtain new IDs after upgrading both servers. The new UUID carries no ASCII marker,
 mode flags, PSK, or derivation-version field. The derivation labels below identify
 the implementation format only; they are not stored in the UUID.
+
+![UUID byte layout: key length, adjacent master and slave SAE codes, random bits with UUID version and variant, and checksum.](docs/qkd-uuid-layout.png)
 
 Start with 16 OS-random bytes, then overwrite the following fields. Byte offsets
 are zero-based; all two-byte numbers are unsigned big-endian.
@@ -112,7 +114,11 @@ The master and slave codes are adjacent. There are **66 random bits** per fixed
 SAE pair and key length. No options are encoded in the ID. Both servers must agree
 on configuration.
 
-Default derivation uses HKDF-SHA512 with this exact formula (`||` means
+## Key derivation
+
+![Three HKDF-SHA512 steps: extract the PSK, compute the UUID checksum, and derive the key from the full UUID.](docs/qkd-key-derivation.png)
+
+Key derivation uses HKDF-SHA512 with this exact formula (`||` means
 concatenation):
 
 ```text
