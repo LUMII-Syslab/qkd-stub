@@ -1,5 +1,10 @@
 # QKD stub
 
+**Main idea.** The stubs share only a PSK. The key ID (UUID) is a public seed that
+encodes the authorized SAE pair, and the key is derived from the PSK and the whole
+UUID. A certificate for the wrong SAE is rejected, and altering the SAE codes in
+the UUID changes the key. Without the PSK, the key cannot be obtained.
+
 Two independent Rust HTTPS servers simulate the ETSI GS QKD 014 V1.1.1 key
 delivery API. Application A obtains a key and UUID from its local stub, sends the
 UUID to application B, and B retrieves the same key from its own stub. The stubs
@@ -15,10 +20,47 @@ This is a software test stub, not real QKD. It has no key consumption, expiry,
 issuance history, or forward secrecy. Anyone with the PSK can reconstruct keys
 from their UUIDs. UUID metadata is public.
 
+## Prerequisites
+
+| Needed | For | Notes |
+| --- | --- | --- |
+| Rust 1.89+ (`rustc`, `cargo`) | build | Edition 2024 needs 1.85, and current dependencies need 1.89. Ubuntu's default `rustc` package is too old. |
+| C compiler (`gcc`, `libc6-dev`) | build | Needed by `ring`. `make`, `pkg-config` and OpenSSL headers are **not** needed. |
+| `openssl` command | `scripts/*.sh`, PSK generation | CLI only, not the library. |
+| `curl`, `python3` | quickstart commands | |
+| Python 3.11+ | `tests/*.py` | Uses `tomllib`. Ubuntu 22.04 has 3.10, so run only the Rust tests there. |
+
+**Ubuntu 24.04** (also available on 22.04), minimal install from the distribution:
+
+```sh
+sudo apt-get update
+sudo apt-get install -y --no-install-recommends \
+    ca-certificates gcc libc6-dev curl openssl python3 rustc-1.91 cargo-1.91
+export PATH=/usr/lib/rust-1.91/bin:$PATH   # add to ~/.profile to keep it
+```
+
+Any Ubuntu version can instead use [rustup](https://rustup.rs/) for Rust, after
+installing the other packages above without `rustc-1.91 cargo-1.91`:
+
+```sh
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
+. ~/.cargo/env
+```
+
+Development checks (`cargo fmt`, `cargo clippy`) also need `rustfmt` and `clippy`:
+`rustup component add rustfmt clippy`. Ubuntu 24.04 has no versioned `clippy`
+package, so use rustup for those.
+
+`scripts/check-ubuntu.sh [IMAGE]` verifies this on a fresh container
+(default `ubuntu:24.04`, requires Docker and network): it installs exactly the
+apt packages above, then builds, runs the quickstart below, the Rust tests and all
+three Python tests. It takes about 90 seconds and passes on Ubuntu 24.04. Ubuntu
+22.04 was checked only for the rustup build and certificate generation. The build
+was also confirmed with `rustc-1.89`, and fails with 1.85.
+
 ## Build and quickstart
 
-Requirements: stable Rust (tested with 1.95), a C compiler, OpenSSL, Python 3.11+ (tests use `tomllib`),
-and curl. Run from this directory:
+Run from this directory:
 
 ```sh
 cargo build --release --locked
