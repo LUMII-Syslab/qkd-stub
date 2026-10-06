@@ -1,5 +1,7 @@
 # QKD stub
 
+![QKD stub architecture: two independent endpoints derive the same SAE-bound key from a shared PSK and UUID.](docs/qkd-stub-architecture.drawio.png)
+
 Two independent Rust HTTPS servers simulate the ETSI GS QKD 014 V1.1.1 key
 delivery API. Application A obtains a key and UUID from its local stub, sends the
 UUID to application B, and B retrieves the same key from its own stub. The stubs
