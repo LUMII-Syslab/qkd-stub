@@ -12,43 +12,24 @@ never contact each other and need no shared database or synchronized clock.
 
 ![Two clients obtain the same SAE-bound key from independent KME stubs using a shared PSK and UUID.](docs/qkd-client-flow.png)
 
-**PSK derivation is mandatory. Certificate-based SAE authorization is enabled by default.**
-Both servers need the same 32-byte random PSK and matching numeric SAE assignments.
-Each application authenticates to its local stub using a client certificate.
-
-This is a software test stub, not real QKD. It has no key consumption, expiry,
-issuance history, or forward secrecy. Anyone with the PSK can reconstruct keys
-from their UUIDs. UUID metadata is public.
+The PSK is mandatory and client-certificate SAE authorization is on by default.
+Anyone with the PSK can reconstruct keys from their UUIDs, and UUID metadata is
+public. This is a software test stub, not real QKD: no key consumption, expiry,
+issuance history or forward secrecy.
 
 ## Prerequisites
 
-| Needed | For | Notes |
-| --- | --- | --- |
-| Rust 1.89+ (`rustc`, `cargo`) | build | Edition 2024 needs 1.85, and current dependencies need 1.89. Ubuntu's default `rustc` package is too old. |
-| C compiler (`gcc`, `libc6-dev`) | build | Needed by `ring`. `make`, `pkg-config` and OpenSSL headers are **not** needed. |
-| `openssl` command | `scripts/*.sh`, PSK generation | CLI only, not the library. |
-| `curl`, `python3` | quickstart commands | |
-| Python 3.11+ | `tests/*.py` | Uses `tomllib`. Ubuntu 22.04 has 3.10, so run only the Rust tests there. |
-
-**Ubuntu 24.04** (also available on 22.04), minimal install from the distribution:
+Rust 1.89+, a C compiler, and the `openssl`, `curl` and `python3` commands. On
+Ubuntu 24.04 (verified on a fresh container):
 
 ```sh
 sudo apt-get update
 sudo apt-get install -y --no-install-recommends \
     ca-certificates gcc libc6-dev curl openssl python3 rustc-1.91 cargo-1.91
-export PATH=/usr/lib/rust-1.91/bin:$PATH   # add to ~/.profile to keep it
+export PATH=/usr/lib/rust-1.91/bin:$PATH
 ```
 
-Any Ubuntu version can instead use [rustup](https://rustup.rs/) for Rust, after
-installing the other packages above without `rustc-1.91 cargo-1.91`:
-
-```sh
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
-. ~/.cargo/env
-```
-
-`scripts/check-ubuntu.sh` verifies these steps on a fresh Ubuntu container
-(requires Docker). More: [Development and testing](https://github.com/LUMII-Syslab/qkd-stub/wiki/Development-and-Testing).
+Other versions, rustup and the version notes: [Ubuntu prerequisites](https://github.com/LUMII-Syslab/qkd-stub/wiki/Ubuntu-Prerequisites).
 
 ## Build and quickstart
 
@@ -62,10 +43,9 @@ cargo build --release --locked
 ./scripts/gen-client-cert.sh pki client-b urn:qkd:sae:B
 ```
 
-Generate the PSK **once**. It is exactly 32 raw bytes, not a password, hex, or
-Base64. The command refuses to overwrite an existing file. The ignored `pki/`
-directory holds local test secrets; keep the PSK readable only by the server
-account (`chmod 600 pki/shared.psk`).
+Generate the PSK **once**: exactly 32 raw bytes, not a password, hex or Base64.
+The command refuses to overwrite an existing file. Keep `pki/shared.psk` readable
+only by the server account (`chmod 600`).
 
 Start each server in its own terminal:
 
@@ -93,53 +73,31 @@ curl --fail --cacert pki/ca.crt --cert pki/client-b.crt --key pki/client-b.key \
   "https://127.0.0.1:8444/api/v1/keys/A/dec_keys?key_ID=$KEY_ID"
 ```
 
-Stop with Ctrl-C or SIGTERM; the server allows five seconds for active connections.
-Certificate scripts preserve existing files; `gen-certs.sh --force` explicitly
-replaces server PKI, requiring clients to update trust if the CA changes.
+Stop with Ctrl-C or SIGTERM. `gen-certs.sh --force` replaces existing server PKI.
 
-### Separate machines
+### Separate machines and unrestricted mode
 
-Securely copy the same PSK to both machines. Configure identical SAE numeric code
-assignments. Each server can use its own TLS certificate and local client CA;
-neither TLS private keys nor CA private keys need to be shared. Each application
-trusts its local server CA and presents its own mapped client certificate.
-
-Both servers can listen on `127.0.0.1:8443` on their respective machines. For
-applications elsewhere in the LAN, bind the server to an appropriate interface
-and include its actual DNS name/IP when generating the server certificate.
-
-### Optional test-only simplification
-
-`--no-sae-binding` disables client authentication and SAE authorization. It
-conflicts with `--tls-client-ca` and `--sae-map`. New IDs use zero for both SAE
-codes. Retrieval skips SAE checks, even for IDs containing nonzero codes.
-
-The PSK is always required, including with `--no-sae-binding`. There is no
-`--no-psk` option or public derivation mode. A PSK alone does not restrict API
-access: keep SAE authorization enabled when clients must be restricted.
-
-Configuration is read at startup. Missing required flags, missing/unreadable
-files, or PSKs of the wrong length fail startup. There is no generated default
-PSK or silent fallback. `--inspect-cert` and `--help` need no server configuration.
+Copy the same PSK and the same SAE code assignments to both machines. Each server
+may use its own TLS certificate and client CA. `--no-sae-binding` disables client
+authentication and SAE checks (test only); the PSK is still required. Details:
+[Deployment notes](https://github.com/LUMII-Syslab/qkd-stub/wiki/Deployment-Notes).
 
 ## Key IDs and derivation
 
 A key ID is a UUID (version 8) holding the key length, the master and slave SAE
 codes, 66 random bits and a one-byte checksum. The key is HKDF-SHA512 over the PSK
 and the full UUID, so both stubs derive the same key without contact. The checksum
-catches a wrong PSK or a damaged ID with probability 255/256. It is **not** a
+catches a wrong PSK or damaged ID with probability 255/256 and is **not** a
 security boundary. Older `QK`/`QA`/`QP`/`QB` UUIDs are unsupported: obtain new IDs
 after upgrading both servers. Byte layout, exact formulas and limits are on the wiki:
 [Key ID and key derivation](https://github.com/LUMII-Syslab/qkd-stub/wiki/Key-ID-and-Key-Derivation).
 
 ## Certificate-based SAE authorization
 
-Supply `--tls-client-ca` and `--sae-map` on both simulators (required by default).
-It supports multiple SAE pairs on the same two processes. A client must present a
-certificate signed by a trusted client CA, valid for client authentication. Its
-subject DN or a supported SAN is matched against the configured SAE registry.
-Missing, untrusted, expired, or wrong-purpose certificates fail the TLS handshake;
-valid certificates with no mapping or conflicting SAE mappings receive HTTP 401.
+Both servers need `--tls-client-ca` and `--sae-map`. A client must present a
+certificate signed by that CA. Its subject DN or a SAN is matched against the
+registry. Invalid certificates fail the TLS handshake; unmapped or ambiguous ones
+get HTTP 401.
 
 The example registry is in [`examples/sae-map.toml`](examples/sae-map.toml):
 
@@ -155,16 +113,11 @@ code = 2
 identities = [{ san_uri = "urn:qkd:sae:B" }]
 ```
 
-Each `[[sae]]` entry has `id`, `code`, and optional `identities`. Each identity is
-an inline table with exactly one selector field (see below). Use TOML literal
-strings (`'...'`) for DNs containing backslashes. Unknown keys are rejected.
-
-Both simulators must assign the **same unique numeric code to each SAE ID**.
-Codes are integers from 1 to 65,535. Keep assignments stable while any key IDs may
-still be used: changing a code changes the meaning of existing IDs. Both endpoints
-need registry entries for all participating SAEs, but their certificate selectors
-and trusted client CAs may differ. Remote-only entries may omit `identities`.
-The file is read at startup; restart after changes.
+Each identity is a table with exactly one selector (`subject_dn`, `san_dns`,
+`san_uri`, `san_email` or `san_ip`). Both servers must assign the **same unique
+code (1–65535) to each SAE ID**, and the codes must stay stable while any key ID
+may still be used. Remote-only entries may omit `identities`. The file is read at
+startup.
 
 On `enc_keys`, the master is the certificate's SAE and the slave is the SAE in the
 URL; both codes go into the UUID. On `dec_keys`, the certificate's SAE must be the
@@ -172,20 +125,12 @@ UUID's slave and the URL's SAE its master, otherwise HTTP 401 for the whole batc
 `Request-SAE-ID` cannot impersonate another SAE. Details:
 [SAE authorization details](https://github.com/LUMII-Syslab/qkd-stub/wiki/SAE-Authorization).
 
-### Certificate mapping rules
-
-Use the built-in inspector to obtain exact selector values from an existing
-certificate (metadata only, trust is not verified). Its output is an
-`identities = [...]` block to paste into an `[[sae]]` entry:
+To get exact selector values from a client certificate (metadata only, trust is
+not verified), paste the output into an `[[sae]]` entry:
 
 ```sh
 ./target/release/qkd-stub --inspect-cert path/to/client.crt
 ```
-
-Supported selector fields are `subject_dn`, `san_dns`, `san_uri`, `san_email`, and
-`san_ip`. A certificate that matches different SAEs is rejected, so prefer one URI
-SAN per client. Matching rules (case sensitivity, normalization, DN rendering):
-[SAE authorization details](https://github.com/LUMII-Syslab/qkd-stub/wiki/SAE-Authorization).
 
 ## Command-line interface
 
@@ -204,15 +149,13 @@ SAN per client. Matching rules (case sensitivity, normalization, DN rendering):
 --help / --version
 ```
 
-HTTPS supports TLS 1.2 and 1.3. There is no HTTP listener. The routes and JSON
-formats follow ETSI GS QKD 014 V1.1.1 for integration testing; the stub is not
-fully ETSI-compliant.
+HTTPS only (TLS 1.2 and 1.3). Routes and JSON follow ETSI GS QKD 014 V1.1.1 but
+the stub is not fully compliant.
 
 ## API
 
-All paths begin with `/api/v1/keys/{SAE_ID}`. URL-encode SAE identifiers.
-With `--no-sae-binding`, no client certificate is required. By default, all three APIs require a verified, unambiguously mapped client certificate;
-SAE IDs in the URL must be present in the registry.
+All paths begin with `/api/v1/keys/{SAE_ID}`. By default, all calls require a
+mapped client certificate and SAE IDs in the URL must be in the registry.
 
 | Method | Suffix | Parameters |
 | --- | --- | --- |
@@ -222,15 +165,7 @@ SAE IDs in the URL must be present in the registry.
 | GET | `/dec_keys` | Required `key_ID` query parameter |
 | POST | `/dec_keys` | JSON `{"key_IDs":[{"key_ID":"UUID"}, ...]}` |
 
-`number` defaults to 1 and must be 1–128. `size` defaults to 256 bits and must be
-8–65,536 bits, divisible by 8. A POST issuance request with defaults uses `{}`.
-Retrieval accepts 1–128 IDs, preserving order and duplicates. The UUID carries the
-key length; `dec_keys` needs no size parameter or prior issuance on that endpoint.
-Key values use standard padded Base64. IDs are returned in lowercase hyphenated
-UUID format; retrieval also accepts uppercase hyphenated UUIDs.
-
-The following examples assume `--no-sae-binding` with the shared PSK configured. For default mode,
-use the certificate-authenticated calls in the quickstart above.
+Examples with `--no-sae-binding` (default mode: see the quickstart):
 
 ```sh
 curl --cacert pki/ca.crt 'https://127.0.0.1:8443/api/v1/keys/B/status'
@@ -241,16 +176,9 @@ curl --cacert pki/ca.crt \
   "https://127.0.0.1:8444/api/v1/keys/A/dec_keys?key_ID=$KEY_ID"
 ```
 
-A key response has this shape (this test vector uses 32 bytes of `0x07` as
-the PSK; deployment secrets must be randomly generated):
-
-```json
-{"keys":[{"key_ID":"00200000-0000-8678-9abc-def012345679","key":"nVsQbynRkkSHxR590PcH9EjAZfPx6vgYbS2iigrJgLE="}]}
-```
-
-Status fields, error messages, extensions and limits:
+Parameters, defaults, response format, errors and limits:
 [API details](https://github.com/LUMII-Syslab/qkd-stub/wiki/API-Details).
-## Development
 
-Test commands and the Ubuntu container check (`scripts/check-ubuntu.sh`):
-[Development and testing](https://github.com/LUMII-Syslab/qkd-stub/wiki/Development-and-Testing).
+## More
+
+[Wiki](https://github.com/LUMII-Syslab/qkd-stub/wiki/Home): key derivation, SAE authorization rules, deployment notes, testing.
