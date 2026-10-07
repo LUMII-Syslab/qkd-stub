@@ -1,10 +1,13 @@
-# QKD endpoint simulator for integration testing
+# QKD Stub - Stateless Key Delivery for Integration Testing
 
-Distribute the same pre-shared key (PSK) to two independent QKD stubs. Each key's
-UUID encrypts the sending and receiving Secure Application Entities (SAEs), a
-random seed, the key length, and a checksum. Both stubs combine this UUID with
-the shared PSK to derive the same secret key, without communicating with each
-other or storing a shared key pool.
+Two independent HTTPS endpoints simulate the ETSI GS QKD 014 V1.1.1 key delivery
+API without QKD hardware.
+
+**Main idea.** Give both stubs the same pre-shared key (PSK). Each key ID is a
+UUID that encrypts the authorized SAE pair, a random seed, the key length, and a
+checksum. Both stubs derive the same key from the PSK and the full UUID, without
+communicating with each other or storing a shared key pool. Without the PSK,
+the UUID reveals neither the embedded SAE pair nor the key.
 
 With SAE binding enabled (the default), retrieval requires a client certificate
 mapped to the UUID's receiving SAE, and the request must name its sending SAE.
