@@ -1,4 +1,4 @@
-# QKD Stub - Stateless Key Delivery for Integration Testing
+# QKD endpoint simulator for integration testing
 
 Two independent HTTPS endpoints simulate the ETSI GS QKD 014 V1.1.1 key delivery
 API without QKD hardware.
