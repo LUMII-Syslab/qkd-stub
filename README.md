@@ -106,10 +106,6 @@ itself has the required six bits (64 attempts on average); no ciphertext bits
 are overwritten. This retains approximately 66 bits of randomness per fixed
 SAE pair and key length. Retrieval needs one decryption.
 
-**Breaking change:** previous plaintext v8 IDs and older formats are unsupported.
-Upgrade both stubs and obtain new IDs. The new HKDF domain labels use `v7`;
-this is the internal format revision, not UUID version 7.
-
 The PSK hides the embedded pair and length from observers of the ID. It does not
 hide network endpoints or traffic patterns, authenticate issuance, or prevent
 replay. The checksum remains an 8-bit configuration/error check, not a security
