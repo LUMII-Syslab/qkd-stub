@@ -1,22 +1,21 @@
-name: Tests
+name: Test suite
 
 on:
-  push:
-  pull_request:
-  workflow_dispatch:
+  workflow_call:
+    inputs:
+      os:
+        description: Runner image to test on
+        required: true
+        type: string
 
 permissions:
   contents: read
 
 jobs:
   test:
-    name: ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
+    name: ${{ inputs.os }}
+    runs-on: ${{ inputs.os }}
     timeout-minutes: 20
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-24.04, windows-2022]
     env:
       RUSTUP_TOOLCHAIN: stable
       CARGO_TERM_COLOR: always

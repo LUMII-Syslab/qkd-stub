@@ -1,6 +1,7 @@
 # QKD endpoint simulator for integration testing
 
-[![Tests](https://github.com/LUMII-Syslab/qkd-stub/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/LUMII-Syslab/qkd-stub/actions/workflows/tests.yml)
+[![Tests (Ubuntu)](https://github.com/LUMII-Syslab/qkd-stub/actions/workflows/ubuntu.yml/badge.svg?branch=main)](https://github.com/LUMII-Syslab/qkd-stub/actions/workflows/ubuntu.yml)
+[![Tests (Windows)](https://github.com/LUMII-Syslab/qkd-stub/actions/workflows/windows.yml/badge.svg?branch=main)](https://github.com/LUMII-Syslab/qkd-stub/actions/workflows/windows.yml)
 
 Two independent HTTPS endpoints simulate the ETSI GS QKD 014 V1.1.1 key delivery
 API without QKD hardware.

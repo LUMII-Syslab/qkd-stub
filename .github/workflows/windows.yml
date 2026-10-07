@@ -1,0 +1,15 @@
+name: Tests (Windows)
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    uses: ./.github/workflows/test-suite.yml
+    with:
+      os: windows-2022
