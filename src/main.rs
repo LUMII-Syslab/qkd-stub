@@ -89,7 +89,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     .expect("install SIGTERM handler");
             tokio::select! { _ = tokio::signal::ctrl_c() => {}, _ = terminate.recv() => {} }
         }
-        #[cfg(not(unix))]
+        #[cfg(windows)]
+        {
+            let mut ctrl_break =
+                tokio::signal::windows::ctrl_break().expect("install Ctrl-Break handler");
+            tokio::select! { _ = tokio::signal::ctrl_c() => {}, _ = ctrl_break.recv() => {} }
+        }
+        #[cfg(not(any(unix, windows)))]
         {
             let _ = tokio::signal::ctrl_c().await;
         }

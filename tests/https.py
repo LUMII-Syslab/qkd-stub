@@ -4,6 +4,7 @@ import base64
 import json
 import os
 from pathlib import Path
+import signal
 import socket
 import ssl
 import subprocess
@@ -13,7 +14,13 @@ import urllib.error
 import urllib.request
 
 ROOT = Path(__file__).resolve().parents[1]
-BINARY = Path(os.environ.get("QKD_STUB_BIN", ROOT / "target/debug/qkd-stub"))
+BINARY = Path(os.environ.get("QKD_STUB_BIN", ROOT / ("target/debug/qkd-stub.exe" if os.name == "nt" else "target/debug/qkd-stub")))
+
+PROCESS_FLAGS = subprocess.CREATE_NEW_PROCESS_GROUP if os.name == "nt" else 0
+
+
+def script(name):
+    return str(ROOT / 'scripts' / (name + ('.bat' if os.name == 'nt' else '.sh')))
 
 
 def free_port():
@@ -35,7 +42,7 @@ def fetch(port, path, context, data=None):
 def start(port, pki, log, context, psk):
     proc = subprocess.Popen(
         [str(BINARY), "--listen", f"127.0.0.1:{port}", "--tls-cert", str(pki / "server.crt"),
-         "--tls-key", str(pki / "server.key"), "--no-sae-binding"] + ["--psk-file", str(psk)], stdout=log, stderr=log)
+         "--tls-key", str(pki / "server.key"), "--no-sae-binding"] + ["--psk-file", str(psk)], stdout=log, stderr=log, creationflags=PROCESS_FLAGS)
     for _ in range(100):
         if proc.poll() is not None:
             raise AssertionError(f"Server exited with {proc.returncode}")
@@ -50,7 +57,10 @@ def start(port, pki, log, context, psk):
 
 def stop(proc):
     if proc.poll() is None:
-        proc.terminate()
+        if os.name == 'nt':
+            proc.send_signal(signal.CTRL_BREAK_EVENT)
+        else:
+            proc.terminate()
         try:
             proc.wait(timeout=7)
         except subprocess.TimeoutExpired:
@@ -64,10 +74,10 @@ def main():
     procs = []
     with tempfile.TemporaryDirectory(prefix="qkd-stub-https-") as temp:
         pki = Path(temp) / "pki"
-        subprocess.run([str(ROOT / "scripts/gen-certs.sh"), str(pki), "localhost", "127.0.0.1", "::1"], check=True)
+        subprocess.run([script("gen-certs"), str(pki), "localhost", "127.0.0.1", "::1"], check=True)
         # Refusing an overwrite must preserve all generated files.
         original = {p.name: p.read_bytes() for p in pki.iterdir()}
-        result = subprocess.run([str(ROOT / "scripts/gen-certs.sh"), str(pki), "localhost"], capture_output=True)
+        result = subprocess.run([script("gen-certs"), str(pki), "localhost"], capture_output=True)
         assert result.returncode != 0
         assert original == {p.name: p.read_bytes() for p in pki.iterdir()}
         psk = Path(temp) / "shared.psk"
@@ -80,7 +90,7 @@ def main():
             try:
                 procs.append(start(a, pki, log, trusted, psk))
                 procs.append(start(b, pki, log, trusted, psk))
-                subprocess.run([str(ROOT / "scripts/smoke-test.sh"), str(pki / "ca.crt"),
+                subprocess.run([script("smoke-test"), str(pki / "ca.crt"),
                                 f"https://127.0.0.1:{a}", f"https://127.0.0.1:{b}"], check=True)
                 issued = fetch(a, "B/enc_keys?number=3&size=1024", trusted)
                 ids = {"key_IDs": [{"key_ID": k["key_ID"]} for k in issued["keys"]]}

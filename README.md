@@ -1,5 +1,7 @@
 # QKD endpoint simulator for integration testing
 
+[![Tests](https://github.com/LUMII-Syslab/qkd-stub/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/LUMII-Syslab/qkd-stub/actions/workflows/tests.yml)
+
 Two independent HTTPS endpoints simulate the ETSI GS QKD 014 V1.1.1 key delivery
 API without QKD hardware.
 
@@ -34,8 +36,11 @@ issuance history or forward secrecy.
 
 ## Prerequisites
 
-Rust 1.89+, a C compiler, and the `openssl`, `curl` and `python3` commands. On
-Ubuntu 24.04 (verified on a fresh container):
+Native Windows setup and `.bat` scripts: [Windows quickstart](docs/windows.md).
+GitHub Actions runs the full test suite on Windows and Linux.
+
+On Linux: Rust 1.89+, a C compiler, OpenSSL 3, Python 3.11+, and curl for the
+examples below. On Ubuntu 24.04 (verified on a fresh container):
 
 ```sh
 sudo apt-get update
@@ -53,7 +58,7 @@ Run from this directory:
 ```sh
 cargo build --release --locked
 ./scripts/gen-certs.sh pki localhost 127.0.0.1 ::1
-(umask 077; set -C; openssl rand 32 > pki/shared.psk)
+./scripts/gen-psk.sh pki/shared.psk
 ./scripts/gen-client-cert.sh pki client-a
 ./scripts/gen-client-cert.sh pki client-b urn:qkd:sae:B
 ```

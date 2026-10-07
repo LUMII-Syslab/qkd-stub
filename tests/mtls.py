@@ -12,7 +12,7 @@ import tomllib
 import urllib.error
 import urllib.request
 from pathlib import Path
-from https import ROOT, BINARY, free_port, stop
+from https import ROOT, BINARY, PROCESS_FLAGS, free_port, script, stop
 
 
 def openssl(*args):
@@ -55,7 +55,7 @@ def start(port, pki, mapping, log, ctx, psk):
     proc = subprocess.Popen([str(BINARY), '--listen', f'127.0.0.1:{port}',
                              '--tls-cert', str(pki / 'server.crt'), '--tls-key', str(pki / 'server.key'),
                              '--tls-client-ca', str(pki / 'ca.crt'), '--sae-map', str(mapping)]
-                            + ['--psk-file', str(psk)], stdout=log, stderr=log)
+                            + ['--psk-file', str(psk)], stdout=log, stderr=log, creationflags=PROCESS_FLAGS)
     for _ in range(100):
         if proc.poll() is not None:
             raise AssertionError(f'Server exited: {proc.returncode}')
@@ -75,11 +75,11 @@ def main():
         psk = root / 'shared.psk'
         psk.write_bytes(bytes([7]) * 32)
         pki = root / 'pki'
-        subprocess.run([str(ROOT / 'scripts/gen-certs.sh'), str(pki), 'localhost', '127.0.0.1'], check=True)
+        subprocess.run([script('gen-certs'), str(pki), 'localhost', '127.0.0.1'], check=True)
         for name, uri in [('client-a', None), ('client-b', 'urn:qkd:sae:B'), ('client-c', None), ('client-d', 'urn:qkd:sae:D')]:
-            subprocess.run([str(ROOT / 'scripts/gen-client-cert.sh'), str(pki), name] + ([uri] if uri else []), check=True)
+            subprocess.run([script('gen-client-cert'), str(pki), name] + ([uri] if uri else []), check=True)
         cert_before = (pki / 'client-a.crt').read_bytes()
-        assert subprocess.run([str(ROOT / 'scripts/gen-client-cert.sh'), str(pki), 'client-a'], capture_output=True).returncode != 0
+        assert subprocess.run([script('gen-client-cert'), str(pki), 'client-a'], capture_output=True).returncode != 0
         assert cert_before == (pki / 'client-a.crt').read_bytes()
         client(pki, 'unmapped', '/CN=unknown')
         client(pki, 'ambiguous', '/CN=client-a', 'URI:urn:qkd:sae:D')
@@ -103,8 +103,8 @@ def main():
         map_path.write_text(mapping)
         contexts = {name: context(pki, cert) for name, cert in [('A','client-a'), ('B','client-b'), ('C','client-c'), ('D','client-d'), ('E','dns'), ('F','ip'), ('G','email')]}
         untrusted = root / 'other-pki'
-        subprocess.run([str(ROOT / 'scripts/gen-certs.sh'), str(untrusted), 'localhost'], check=True)
-        subprocess.run([str(ROOT / 'scripts/gen-client-cert.sh'), str(untrusted), 'client-a'], check=True)
+        subprocess.run([script('gen-certs'), str(untrusted), 'localhost'], check=True)
+        subprocess.run([script('gen-client-cert'), str(untrusted), 'client-a'], check=True)
         a, b = free_port(), free_port()
         while b == a:
             b = free_port()

@@ -18,7 +18,7 @@ cd /w
 cargo build --release --locked
 cargo build --locked
 ./scripts/gen-certs.sh pki localhost 127.0.0.1 ::1
-(umask 077; set -C; openssl rand 32 > pki/shared.psk)
+./scripts/gen-psk.sh pki/shared.psk
 ./scripts/gen-client-cert.sh pki client-a
 ./scripts/gen-client-cert.sh pki client-b urn:qkd:sae:B
 for p in "8443 KME-A KME-B" "8444 KME-B KME-A"; do
@@ -36,6 +36,7 @@ curl --fail --cacert pki/ca.crt --cert pki/client-b.crt --key pki/client-b.key \
     "https://127.0.0.1:8444/api/v1/keys/A/dec_keys?key_ID=$id"
 kill %1 %2
 cargo test --release --locked
+python3 tests/setup.py
 python3 tests/https.py
 python3 tests/mtls.py
 python3 tests/psk.py

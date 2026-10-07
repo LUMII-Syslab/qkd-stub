@@ -10,7 +10,7 @@ from pathlib import Path
 
 import https
 import mtls
-from https import BINARY, ROOT, free_port, stop
+from https import BINARY, ROOT, free_port, script, stop
 from mtls import context, fetch
 
 
@@ -73,9 +73,9 @@ def main():
     with tempfile.TemporaryDirectory(prefix='qkd-stub-psk-') as temp:
         root = Path(temp)
         pki = root / 'pki'
-        subprocess.run([str(ROOT / 'scripts/gen-certs.sh'), str(pki), 'localhost', '127.0.0.1'], check=True)
+        subprocess.run([script('gen-certs'), str(pki), 'localhost', '127.0.0.1'], check=True)
         for name, uri in [('client-a', None), ('client-b', 'urn:qkd:sae:B')]:
-            subprocess.run([str(ROOT / 'scripts/gen-client-cert.sh'), str(pki), name]
+            subprocess.run([script('gen-client-cert'), str(pki), name]
                            + ([uri] if uri else []), check=True)
         secret = secrets.token_bytes(32)
         psk = root / 'shared.psk'
