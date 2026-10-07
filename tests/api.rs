@@ -32,12 +32,12 @@ async fn request(
 }
 const ENC: &str = "/api/v1/keys/B/enc_keys";
 const DEC: &str = "/api/v1/keys/A/dec_keys";
-const VECTOR: &str = "00200000-0000-8678-9abc-def012345679";
+const VECTOR: &str = "ab531e5f-28fd-4f93-b7cf-f49a723babac";
 
 #[test]
 fn fixed_vector_and_uuid_validation() {
     let key = keys::derive(VECTOR, &psk()).unwrap();
-    assert_eq!(key.key, "nVsQbynRkkSHxR590PcH9EjAZfPx6vgYbS2iigrJgLE=");
+    assert_eq!(key.key, "29dcgpL9WDwAf/0CfUUAm5JptfBv9w7mr7mvu0ZYfo8=");
     assert_eq!(
         keys::derive(&VECTOR.to_uppercase(), &psk()).unwrap().key,
         key.key
@@ -45,6 +45,7 @@ fn fixed_vector_and_uuid_validation() {
     for id in [
         "",
         "invalid",
+        "00200000-0000-8678-9abc-def012345679",
         "514b0020123486789abcdef012345678",
         "514b0020-1234-4678-9abc-def012345678",
         "514b0020-1234-8678-1abc-def012345678",
@@ -66,12 +67,8 @@ fn roundtrip_sizes_and_fresh_ids() {
             assert_eq!(STANDARD.decode(&key.key).unwrap().len(), size as usize / 8);
             assert_eq!(keys::derive(&key.key_id, &psk()).unwrap().key, key.key);
             let uuid = uuid::Uuid::parse_str(&key.key_id).unwrap();
-            assert_eq!(uuid.as_bytes()[6] >> 4, 8);
+            assert_eq!(uuid.as_bytes()[6] >> 4, 4);
             assert_eq!(uuid.as_bytes()[8] >> 6, 2);
-            assert_eq!(
-                u16::from_be_bytes([uuid.as_bytes()[0], uuid.as_bytes()[1]]) as u32 * 8,
-                size
-            );
         }
     }
 }

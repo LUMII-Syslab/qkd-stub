@@ -1,9 +1,16 @@
-# QKD stub
+# QKD endpoint simulator for integration testing
 
-**Main idea.** The stubs share only a PSK. The key ID (UUID) is a public seed that
-encodes the authorized SAE pair, and the key is derived from the PSK and the whole
-UUID. A certificate for the wrong SAE is rejected, and altering the SAE codes in
-the UUID changes the key. Without the PSK, the key cannot be obtained.
+Distribute the same pre-shared key (PSK) to two independent QKD stubs. Each key's
+UUID encrypts the sending and receiving Secure Application Entities (SAEs), a
+random seed, the key length, and a checksum. Both stubs combine this UUID with
+the shared PSK to derive the same secret key, without communicating with each
+other or storing a shared key pool.
+
+With SAE binding enabled (the default), retrieval requires a client certificate
+mapped to the UUID's receiving SAE, and the request must name its sending SAE.
+An attacker holding a valid certificate for a different SAE cannot retrieve the
+key through the stub using that UUID. The UUID alone is insufficient to calculate
+the key without the PSK.
 
 Two independent Rust HTTPS servers simulate the ETSI GS QKD 014 V1.1.1 key
 delivery API. Application A obtains a key and UUID from its local stub, sends the
@@ -12,9 +19,14 @@ never contact each other and need no shared database or synchronized clock.
 
 ![Two clients obtain the same SAE-bound key from independent KME stubs using a shared PSK and UUID.](docs/qkd-client-flow.png)
 
+Both servers use the same 32-byte pre-shared key (PSK) to independently derive
+identical key material from a UUID. By default, client certificates identify each
+application as a Secure Application Entity (SAE), and the UUID binds the key to
+the sending and receiving SAEs. Both servers must assign the same numeric codes
+to those SAEs.
+
 The PSK is mandatory and client-certificate SAE authorization is on by default.
-Anyone with the PSK can reconstruct keys from their UUIDs, and UUID metadata is
-public. This is a software test stub, not real QKD: no key consumption, expiry,
+Anyone with the PSK can reconstruct keys and decrypt their UUID metadata. This is a software test stub, not real QKD: no key consumption, expiry,
 issuance history or forward secrecy.
 
 ## Prerequisites
@@ -84,13 +96,22 @@ authentication and SAE checks (test only); the PSK is still required. Details:
 
 ## Key IDs and derivation
 
-A key ID is a UUID (version 8) holding the key length, the master and slave SAE
-codes, 66 random bits and a one-byte checksum. The key is HKDF-SHA512 over the PSK
-and the full UUID, so both stubs derive the same key without contact. The checksum
-catches a wrong PSK or damaged ID with probability 255/256 and is **not** a
-security boundary. Older `QK`/`QA`/`QP`/`QB` UUIDs are unsupported: obtain new IDs
-after upgrading both servers. Byte layout, exact formulas and limits are on the wiki:
-[Key ID and key derivation](https://github.com/LUMII-Syslab/qkd-stub/wiki/Key-ID-and-Key-Derivation).
+Key IDs are AES-256 ciphertext formatted with UUIDv4 version/variant bits.
+The encrypted payload holds the key length, SAE pair, 72 random bits and a
+one-byte checksum. Generation retries with fresh randomness until the ciphertext
+itself has the required six bits (64 attempts on average); no ciphertext bits
+are overwritten. This retains approximately 66 bits of randomness per fixed
+SAE pair and key length. Retrieval needs one decryption.
+
+**Breaking change:** previous plaintext v8 IDs and older formats are unsupported.
+Upgrade both stubs and obtain new IDs. The new HKDF domain labels use `v7`;
+this is the internal format revision, not UUID version 7.
+
+The PSK hides the embedded pair and length from observers of the ID. It does not
+hide network endpoints or traffic patterns, authenticate issuance, or prevent
+replay. The checksum remains an 8-bit configuration/error check, not a security
+boundary. See [encrypted ID format](docs/encrypted-key-ids.md) for the exact layout,
+derivation and limits. Older layout/derivation images describe the previous format.
 
 ## Certificate-based SAE authorization
 

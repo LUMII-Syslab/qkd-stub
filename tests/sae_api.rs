@@ -196,12 +196,8 @@ fn bound_ids_preserve_pair_and_sizes() {
             k.key
         );
         let uuid = uuid::Uuid::parse_str(&k.key_id).unwrap();
-        assert_eq!(
-            u16::from_be_bytes([uuid.as_bytes()[0], uuid.as_bytes()[1]]) as u32 * 8,
-            size
-        );
-        assert_eq!(&uuid.as_bytes()[2..4], &[255, 255]);
-        assert_eq!(&uuid.as_bytes()[4..6], &[0, 2]);
+        assert_eq!(uuid.as_bytes()[6] >> 4, 4);
+        assert_eq!(uuid.as_bytes()[8] >> 6, 2);
     }
     assert!(
         keys::generate_bound(
@@ -215,7 +211,7 @@ fn bound_ids_preserve_pair_and_sizes() {
         .is_err()
     );
     let k = keys::derive_bound(
-        "00200001-0002-8678-9abc-def0123456b4",
+        "0a142bd6-b238-400c-9bf3-3dc2cdef20fd",
         Parties {
             master: 1,
             slave: 2,
@@ -223,7 +219,7 @@ fn bound_ids_preserve_pair_and_sizes() {
         &psk(),
     )
     .unwrap();
-    assert_eq!(k.key, "JT3926nJlkFON+iD/HgZVKA4ft8nPE+YrJSH8zvYSgw=");
+    assert_eq!(k.key, "GuyWf9LhOQDfzpjOFM9DVYYa2UWRk3b5RtZchFiK1jE=");
 }
 
 fn psk() -> keys::Psk {

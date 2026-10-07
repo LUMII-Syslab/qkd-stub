@@ -25,16 +25,51 @@ def expand(psk, domain, data, size):
 
 
 def check(psk, raw):
-    return expand(psk, b'qkd-stub:id-check:v6\0', raw[:15], 1)[0]
+    return expand(psk, b'qkd-stub:id-check:v7\0', raw[:15], 1)[0]
+
+
+def crypt(psk, raw, decrypt=False):
+    # Independent AES implementation; OpenSSL is already a test prerequisite.
+    key = expand(psk, b'qkd-stub:id-encryption:v7\0', b'', 32)
+    return subprocess.run(
+        ['openssl', 'enc', '-aes-256-ecb', '-nopad', '-nosalt',
+         '-K', key.hex()] + (['-d'] if decrypt else []),
+        input=raw, capture_output=True, check=True).stdout
+
+
+def valid_plaintext(psk, raw):
+    return 1 <= int.from_bytes(raw[:2], 'big') <= 8192 and raw[15] == check(psk, raw)
 
 
 def expected(psk, key_id):
     raw = uuid.UUID(key_id).bytes
-    size = int.from_bytes(raw[:2], 'big')
-    return base64.b64encode(expand(psk, b'qkd-stub:key:v6\0', raw, size)).decode()
+    plain = crypt(psk, raw, decrypt=True)
+    size = int.from_bytes(plain[:2], 'big')
+    return base64.b64encode(expand(psk, b'qkd-stub:key:v7\0', raw, size)).decode()
+
+
+def vector(master, slave):
+    psk = bytes([7]) * 32
+    for seed in range(4096):
+        raw = bytearray((32).to_bytes(2, 'big') + master.to_bytes(2, 'big')
+                        + slave.to_bytes(2, 'big') + seed.to_bytes(9, 'big') + b'\0')
+        raw[15] = check(psk, raw)
+        encrypted = crypt(psk, raw)
+        if encrypted[6] >> 4 == 4 and encrypted[8] >> 6 == 2:
+            key_id = str(uuid.UUID(bytes=encrypted))
+            return key_id, expected(psk, key_id), raw.hex()
+    raise AssertionError('no vector found')
 
 
 def main():
+    assert vector(0, 0) == (
+        'ab531e5f-28fd-4f93-b7cf-f49a723babac',
+        '29dcgpL9WDwAf/0CfUUAm5JptfBv9w7mr7mvu0ZYfo8=',
+        '0020000000000000000000000000070e')
+    assert vector(1, 2) == (
+        '0a142bd6-b238-400c-9bf3-3dc2cdef20fd',
+        'GuyWf9LhOQDfzpjOFM9DVYYa2UWRk3b5RtZchFiK1jE=',
+        '00200001000200000000000000002807')
     with tempfile.TemporaryDirectory(prefix='qkd-stub-psk-') as temp:
         root = Path(temp)
         pki = root / 'pki'
@@ -81,11 +116,12 @@ def main():
                                 status, issued = fetch(source, f'{slave}/enc_keys?size={size}', master_ctx, body)
                                 assert status == 200
                                 for key in issued['keys']:
-                                    raw = uuid.UUID(key['key_ID']).bytes
+                                    encrypted = uuid.UUID(key['key_ID']).bytes
+                                    assert encrypted[6] >> 4 == 4 and encrypted[8] >> 6 == 2
+                                    raw = crypt(secret, encrypted, decrypt=True)
                                     assert int.from_bytes(raw[:2], 'big') == size // 8
                                     assert raw[2:6] == (bytes([0, 1 if master == 'A' else 2, 0, 2 if slave == 'B' else 1]) if bound else bytes(4))
                                     assert raw[15] == check(secret, raw)
-                                    assert raw[6] >> 4 == 8 and raw[8] >> 6 == 2
                                     assert key['key'] == expected(secret, key['key_ID'])
                                     assert fetch(target, f'{master}/dec_keys?key_ID={key["key_ID"].upper()}', slave_ctx) == (200, {'keys': [key]})
                                 ids = {'key_IDs': [{'key_ID': k['key_ID']} for k in issued['keys']]}
@@ -95,22 +131,27 @@ def main():
                     key_id = issued['keys'][0]['key_ID']
                     path = f'A/dec_keys?key_ID={key_id}'
                     damaged = bytearray(uuid.UUID(key_id).bytes)
-                    damaged[15] ^= 1
+                    for delta in range(1, 256):
+                        damaged[15] = uuid.UUID(key_id).bytes[15] ^ delta
+                        if not valid_plaintext(secret, crypt(secret, damaged, decrypt=True)):
+                            break
+                    else:
+                        raise AssertionError('no invalid ciphertext found')
                     mixed = {'key_IDs': [{'key_ID': key_id}, {'key_ID': str(uuid.UUID(bytes=bytes(damaged)))}]}
                     status, error = fetch(b, 'A/dec_keys', ctx_b, mixed)
                     assert status == 400 and 'keys' not in error
                     if bound:
                         assert fetch(b, path, ctx_a, header='B')[0] == 401
                         assert fetch(b, f'C/dec_keys?key_ID={key_id}', ctx_b)[0] == 401
-                    # Choose a wrong secret whose check differs, avoiding a flaky 1/256 collision.
+                    # Choose a wrong secret that fails decrypted payload validation.
                     raw = uuid.UUID(key_id).bytes
-                    while check(wrong.read_bytes(), raw) == raw[15]:
+                    while valid_plaintext(wrong.read_bytes(), crypt(wrong.read_bytes(), raw, decrypt=True)):
                         wrong.write_bytes(secrets.token_bytes(32))
                     # Restart with a wrong secret: fail before returning key material.
                     stop(procs[1])
                     procs[1] = start(b, wrong)
                     status, different = fetch(b, path, ctx_b)
-                    assert status == 400 and 'checksum mismatch' in different['message']
+                    assert status == 400
                     assert 'keys' not in different
                     stop(procs[1])
                     procs[1] = start(b, psk)

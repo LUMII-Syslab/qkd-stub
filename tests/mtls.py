@@ -88,6 +88,8 @@ def main():
         client(pki, 'email', '/CN=email', 'email:sae-g@example.test')
         client(pki, 'escaped', '/O=Example/CN=client-a,OU=Other')
         client(pki, 'expired', '/CN=client-a', days=0)
+        # Certificate validity has second precision; leave its issuance second.
+        time.sleep(1.1)
         mapping = (ROOT / 'examples/sae-map.toml').read_text()
         assert len(tomllib.loads(mapping)['sae']) == 4
         for i, name, field, value in [(5,'E','san_dns','sae-e.example'), (6,'F','san_ip','2001:0db8:0:0::1'), (7,'G','san_email','sae-g@example.test')]:
@@ -137,7 +139,7 @@ def main():
                 status, data = fetch(b, 'A/dec_keys', contexts['B'], mixed)
                 assert status == 401 and 'keys' not in data
                 old = '00200000-0000-8678-9abc-def012345679'
-                assert fetch(b, f'A/dec_keys?key_ID={old}', contexts['B'])[0] == 401
+                assert fetch(b, f'A/dec_keys?key_ID={old}', contexts['B'])[0] == 400
                 stop(procs.pop())
                 procs.append(start(b, pki, map_path, log, contexts['A'], psk))
                 assert fetch(b, f'A/dec_keys?key_ID={id_ab}', contexts['B'])[1]['keys'][0] == keys['A']['keys'][0]

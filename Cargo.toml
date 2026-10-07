@@ -6,6 +6,7 @@ description = "Independent deterministic ETSI GS QKD 014 HTTPS test endpoints"
 license = "MIT"
 
 [dependencies]
+aes = "0.8"
 axum = "0.8"
 axum-server = { version = "0.8", features = ["tls-rustls-no-provider"] }
 base64 = "0.22"
