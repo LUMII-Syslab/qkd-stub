@@ -120,7 +120,7 @@ def main():
                 for ctx in [context(pki), context(pki,'client-a',untrusted), context(pki,'server'), context(pki,'expired')]:
                     try:
                         result = fetch(a, 'B/status', ctx, header='A')
-                    except (ssl.SSLError, urllib.error.URLError, http.client.RemoteDisconnected):
+                    except (ssl.SSLError, urllib.error.URLError, http.client.RemoteDisconnected, ConnectionResetError):
                         pass
                     else:
                         raise AssertionError(f'Invalid client passed TLS handshake: {result}')
