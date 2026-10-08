@@ -2,6 +2,9 @@ name: Tests (Ubuntu)
 
 on:
   push:
+    paths-ignore:
+      - "docs/**"
+      - "**/*.md"
   pull_request:
   workflow_dispatch:
 
