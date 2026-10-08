@@ -57,13 +57,21 @@ repeated ciphertext and the same key.
 The checksum is not authentication or proof of issuance. Conditional on a
 plausible decrypted length, a wrong PSK passes this 8-bit check with probability
 about 1/256; length validation rejects additional wrong-key decryptions.
-There is no issuance history, consumption, expiry, replay protection or forward
-secrecy. PSK holders can recover metadata and keys; observers may still learn
+
+Authorized repeat retrieval of the same ID returns the same key while the PSK
+remains unchanged, including after a restart. This supports retries; retrieval
+does not consume the ID, and IDs do not expire. The stub keeps no issuance history.
+
+PSK-derived keys do not have forward secrecy. PSK holders can recover metadata
+and keys; observers may still learn
 communication partners through endpoints, request paths or traffic patterns.
 
 Previous plaintext UUIDv8 IDs and older formats are rejected. Upgrade both
 servers and obtain new IDs. Revision v7 in labels is unrelated to UUIDv7.
-The older UUID layout and key-derivation PNGs are historical, not this format.
+Current diagrams: [ID layout](key-id-layout.drawio.png),
+[key derivation](key-derivation.drawio.png), and
+[editable three-page source](qkd-stub-architecture.drawio).
+The older `qkd-uuid-layout.png` and `qkd-key-derivation.png` images are historical.
 
 ## Independent test vectors
 

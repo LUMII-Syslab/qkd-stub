@@ -32,8 +32,8 @@ the sending and receiving SAEs. Both servers must assign the same numeric codes
 to those SAEs.
 
 The PSK is mandatory and client-certificate SAE authorization is on by default.
-Anyone with the PSK can reconstruct keys and decrypt their UUID metadata. This is a software test stub, not real QKD: no key consumption, expiry,
-issuance history or forward secrecy.
+Anyone with the PSK can reconstruct keys and decrypt their UUID metadata. This is
+a software test stub, not real QKD, and PSK-derived keys do not have forward secrecy.
 
 ## Prerequisites
 
@@ -112,11 +112,17 @@ itself has the required six bits (64 attempts on average); no ciphertext bits
 are overwritten. This retains approximately 66 bits of randomness per fixed
 SAE pair and key length. Retrieval needs one decryption.
 
+Authorized repeat retrieval of the same ID returns the same key while the PSK
+remains unchanged, including after a restart. This supports retries; retrieval
+does not consume the ID, and IDs do not expire.
+
 The PSK hides the embedded pair and length from observers of the ID. It does not
-hide network endpoints or traffic patterns, authenticate issuance, or prevent
-replay. The checksum remains an 8-bit configuration/error check, not a security
-boundary. See [encrypted ID format](docs/encrypted-key-ids.md) for the exact layout,
-derivation and limits. Older layout/derivation images describe the previous format.
+hide network endpoints or traffic patterns, or authenticate issuance. The checksum
+remains an 8-bit configuration/error check, not a security boundary. See [encrypted ID format](docs/encrypted-key-ids.md) for the exact layout,
+derivation and limits. The [editable three-page diagram](docs/qkd-stub-architecture.drawio)
+contains the current exchange flow, [ID layout](docs/key-id-layout.drawio.png),
+and [key derivation](docs/key-derivation.drawio.png). Older `qkd-uuid-layout.png`
+and `qkd-key-derivation.png` images describe the previous format.
 
 ## Certificate-based SAE authorization
 

@@ -1,0 +1,305 @@
+<mxfile host="Electron" pages="3">
+  <diagram id="QkZuXBPoODuZVWPDFSA6" name="Key Exchange Flow">
+    <mxGraphModel dx="2054" dy="1206" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="800" math="0" shadow="0" background="#FFFFFF">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="XVQUhR2G2x-bOHj4k4DN-1" parent="1" style="rounded=0;arcSize=10;whiteSpace=wrap;html=1;fillColor=#EFF7FF;strokeColor=#1663A6;strokeWidth=1.5;fontFamily=Helvetica;fontSize=18;fontColor=#10243A;fontStyle=0;align=left;verticalAlign=middle;spacing=16;container=0;pointerEvents=0;dashed=1;" value="" vertex="1">
+          <mxGeometry height="500" width="670" x="40" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="XVQUhR2G2x-bOHj4k4DN-2" parent="1" style="rounded=0;arcSize=10;whiteSpace=wrap;html=1;fillColor=#EFFAF5;strokeColor=#127B66;strokeWidth=1.5;fontFamily=Helvetica;fontSize=18;fontColor=#10243A;fontStyle=0;align=left;verticalAlign=middle;spacing=16;container=0;pointerEvents=0;dashed=1;" value="" vertex="1">
+          <mxGeometry height="500" width="670" x="870" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="XVQUhR2G2x-bOHj4k4DN-3" edge="1" parent="1" source="XVQUhR2G2x-bOHj4k4DN-7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#713BB6;strokeWidth=2.5;endArrow=block;endFill=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" target="XVQUhR2G2x-bOHj4k4DN-15">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="XVQUhR2G2x-bOHj4k4DN-4" parent="1" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;strokeWidth=1.5;fontFamily=Helvetica;fontSize=17;fontColor=#713BB6;fontStyle=1;align=left;verticalAlign=middle;spacing=16;spacing=0;align=center;" value="3 UUID ONLY" vertex="1">
+          <mxGeometry height="38" width="154" x="713" y="76" as="geometry" />
+        </mxCell>
+        <mxCell id="XVQUhR2G2x-bOHj4k4DN-5" parent="1" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#F1E9FC;strokeColor=#713BB6;strokeWidth=1.5;fontFamily=Helvetica;fontSize=15;fontColor=#713BB6;fontStyle=1;align=left;verticalAlign=middle;spacing=16;align=center;spacing=0;" value="UUID" vertex="1">
+          <mxGeometry height="29" width="112" x="734" y="131" as="geometry" />
+        </mxCell>
+        <mxCell id="XVQUhR2G2x-bOHj4k4DN-6" parent="1" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;strokeWidth=1.5;fontFamily=Helvetica;fontSize=16;fontColor=#52677C;fontStyle=0;align=left;verticalAlign=middle;spacing=16;spacing=0;align=center;" value="&lt;font style=&quot;font-size: 20px;&quot;&gt;&lt;b style=&quot;&quot;&gt;No&lt;br&gt;KME-to-KME&lt;br&gt;connection&lt;/b&gt;&lt;/font&gt;" vertex="1">
+          <mxGeometry height="108" width="134" x="723" y="348" as="geometry" />
+        </mxCell>
+        <mxCell id="XVQUhR2G2x-bOHj4k4DN-7" parent="1" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1663A6;strokeWidth=1.5;fontFamily=Helvetica;fontSize=24;fontColor=#10243A;fontStyle=0;align=left;verticalAlign=middle;spacing=16;spacingLeft=75;" value="&lt;b&gt;Client 1 · SAE&amp;nbsp;&lt;/b&gt;&lt;span style=&quot;color: rgb(82, 103, 124); font-size: 17px;&quot;&gt;(Secure Application Entity)&lt;/span&gt;&lt;b&gt;&amp;nbsp;A&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#52677C&quot; style=&quot;font-size: 17px;&quot;&gt;In mTLS, client certificate DN / SAN identifies SAE A&lt;/font&gt;" vertex="1">
+          <mxGeometry height="84" width="622" x="64" y="78" as="geometry" />
+        </mxCell>
+        <mxCell id="XVQUhR2G2x-bOHj4k4DN-8" parent="1" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1663A6;strokeWidth=1.5;fontFamily=Helvetica;fontSize=18;fontColor=#10243A;fontStyle=0;align=left;verticalAlign=middle;spacing=16;verticalAlign=top;spacingTop=4;spacingLeft=75;" value="&lt;b&gt;KME (Key Management Entity) · stub A · Issue&lt;/b&gt;&lt;ol&gt;&lt;li&gt;Authenticate SAE A; resolve recipient B.&lt;/li&gt;&lt;li&gt;Pack length, SAE codes, 72 random bits + check.&lt;/li&gt;&lt;li&gt;AES-encrypt; retry until UUIDv4 bits match.&lt;/li&gt;&lt;li&gt;Derive key from PSK + full ciphertext UUID.&lt;/li&gt;&lt;/ol&gt;" vertex="1">
+          <mxGeometry height="172" width="622" x="64" y="311" as="geometry" />
+        </mxCell>
+        <mxCell id="XVQUhR2G2x-bOHj4k4DN-9" edge="1" parent="1" source="XVQUhR2G2x-bOHj4k4DN-7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#1663A6;strokeWidth=2.5;endArrow=block;endFill=1;exitX=0.04;exitY=1;entryX=0.04;entryY=0;" target="XVQUhR2G2x-bOHj4k4DN-8">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="XVQUhR2G2x-bOHj4k4DN-10" edge="1" parent="1" source="XVQUhR2G2x-bOHj4k4DN-8" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#1663A6;strokeWidth=2.5;endArrow=block;endFill=1;exitX=0.96;exitY=0;entryX=0.96;entryY=1;" target="XVQUhR2G2x-bOHj4k4DN-7">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="XVQUhR2G2x-bOHj4k4DN-11" parent="1" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;strokeWidth=1.5;fontFamily=Helvetica;fontSize=16;fontColor=#10243A;fontStyle=0;align=left;verticalAlign=middle;spacing=16;spacing=0;" value="&lt;b&gt;&lt;font style=&quot;font-size: 18px;&quot;&gt;1  Request key for B&lt;/font&gt;&lt;/b&gt;&lt;div&gt;&lt;span style=&quot;font-size: 18px;&quot;&gt;&lt;b&gt;&lt;br&gt;&lt;/b&gt;&lt;/span&gt;&lt;font face=&quot;Courier New&quot; style=&quot;background-color: light-dark(#ffffff, var(--ge-dark-color, #121212));&quot;&gt;GET /api/v1/keys/&lt;b&gt;B&lt;/b&gt;/&lt;br&gt;enc_keys?size=256&lt;/font&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="92" width="265" x="108" y="184" as="geometry" />
+        </mxCell>
+        <mxCell id="XVQUhR2G2x-bOHj4k4DN-12" parent="1" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;strokeWidth=1.5;fontFamily=Helvetica;fontSize=16;fontColor=#10243A;fontStyle=0;align=left;verticalAlign=middle;spacing=16;spacing=0;" value="&lt;b&gt;&lt;font style=&quot;font-size: 18px;&quot;&gt;2  Return key + UUID&lt;/font&gt;&lt;/b&gt;&lt;div&gt;&lt;span style=&quot;font-size: 18px;&quot;&gt;&lt;b&gt;&lt;br&gt;&lt;/b&gt;&lt;/span&gt;&lt;font face=&quot;Courier New&quot; style=&quot;background-color: light-dark(#ffffff, var(--ge-dark-color, #121212));&quot;&gt;key_ID: UUID&lt;br&gt;key: Base64 key bytes&lt;/font&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="92" width="234" x="439" y="184" as="geometry" />
+        </mxCell>
+        <mxCell id="XVQUhR2G2x-bOHj4k4DN-13" parent="1" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;strokeWidth=1.5;fontFamily=Helvetica;fontSize=22;fontColor=#1663A6;fontStyle=1;align=left;verticalAlign=middle;spacing=16;spacing=0;align=center;" value="&lt;font&gt;mTLS&lt;br&gt;&lt;font style=&quot;font-size: 16px;&quot;&gt;( HTTPS )&lt;/font&gt;&lt;/font&gt;" vertex="1">
+          <mxGeometry height="23" width="140" x="299" y="226" as="geometry" />
+        </mxCell>
+        <mxCell id="XVQUhR2G2x-bOHj4k4DN-14" parent="1" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=none;strokeWidth=1.5;fontFamily=Helvetica;fontSize=16;fontColor=#1663A6;fontStyle=1;align=left;verticalAlign=middle;spacing=16;spacing=5;align=center;" value="Shared PSK · identical 32-byte secret · provisioned beforehand" vertex="1">
+          <mxGeometry height="34" width="510" x="120" y="489" as="geometry" />
+        </mxCell>
+        <mxCell id="XVQUhR2G2x-bOHj4k4DN-15" parent="1" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#127B66;strokeWidth=1.5;fontFamily=Helvetica;fontSize=24;fontColor=#10243A;fontStyle=0;align=left;verticalAlign=middle;spacing=16;spacingLeft=75;" value="&lt;b&gt;Client 2 · SAE&amp;nbsp;&lt;/b&gt;&lt;span style=&quot;color: rgb(82, 103, 124); font-size: 17px;&quot;&gt;(Secure Application Entity)&lt;/span&gt;&lt;b&gt;&amp;nbsp;B&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;color: rgb(82, 103, 124); font-size: 17px;&quot;&gt;In mTLS, client certificate DN / SAN identifies SAE B&lt;/span&gt;" vertex="1">
+          <mxGeometry height="84" width="622" x="894" y="78" as="geometry" />
+        </mxCell>
+        <mxCell id="XVQUhR2G2x-bOHj4k4DN-16" parent="1" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#127B66;strokeWidth=1.5;fontFamily=Helvetica;fontSize=18;fontColor=#10243A;fontStyle=0;align=left;verticalAlign=middle;spacing=16;verticalAlign=top;spacingTop=4;spacingLeft=75;" value="&lt;b&gt;KME (Key Management Entity) · stub B · Retrieve&lt;/b&gt;&lt;ol&gt;&lt;li&gt;Authenticate SAE B; validate UUIDv4 format.&lt;/li&gt;&lt;li&gt;AES-decrypt; validate length and checksum.&lt;/li&gt;&lt;li&gt;Match URL master A and certificate slave B.&lt;/li&gt;&lt;li&gt;Derive key from PSK + full ciphertext UUID.&lt;/li&gt;&lt;/ol&gt;" vertex="1">
+          <mxGeometry height="172" width="622" x="894" y="311" as="geometry" />
+        </mxCell>
+        <mxCell id="XVQUhR2G2x-bOHj4k4DN-17" edge="1" parent="1" source="XVQUhR2G2x-bOHj4k4DN-15" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#127B66;strokeWidth=2.5;endArrow=block;endFill=1;exitX=0.04;exitY=1;entryX=0.04;entryY=0;" target="XVQUhR2G2x-bOHj4k4DN-16">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="XVQUhR2G2x-bOHj4k4DN-18" edge="1" parent="1" source="XVQUhR2G2x-bOHj4k4DN-16" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#127B66;strokeWidth=2.5;endArrow=block;endFill=1;exitX=0.96;exitY=0;entryX=0.96;entryY=1;" target="XVQUhR2G2x-bOHj4k4DN-15">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="XVQUhR2G2x-bOHj4k4DN-19" parent="1" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;strokeWidth=1.5;fontFamily=Helvetica;fontSize=16;fontColor=#10243A;fontStyle=0;align=left;verticalAlign=middle;spacing=16;spacing=0;" value="&lt;b&gt;&lt;font style=&quot;font-size: 18px;&quot;&gt;4 Request matching key&lt;/font&gt;&lt;/b&gt;&lt;div&gt;&lt;b&gt;&lt;br&gt;&lt;/b&gt;&lt;font face=&quot;Courier New&quot; style=&quot;background-color: light-dark(#ffffff, var(--ge-dark-color, #121212));&quot;&gt;GET /api/v1/keys/&lt;b&gt;A&lt;/b&gt;/&lt;br&gt;dec_keys?key_ID=UUID&lt;/font&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="92" width="265" x="938" y="184" as="geometry" />
+        </mxCell>
+        <mxCell id="XVQUhR2G2x-bOHj4k4DN-20" parent="1" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;strokeWidth=1.5;fontFamily=Helvetica;fontSize=16;fontColor=#10243A;fontStyle=0;align=left;verticalAlign=middle;spacing=16;spacing=0;" value="&lt;b&gt;&lt;font style=&quot;font-size: 18px;&quot;&gt;5 Return the same key&lt;/font&gt;&lt;/b&gt;&lt;div&gt;&lt;b&gt;&lt;br&gt;&lt;/b&gt;&lt;font face=&quot;Courier New&quot; style=&quot;background-color: light-dark(#ffffff, var(--ge-dark-color, #121212));&quot;&gt;key_ID: UUID&lt;br&gt;key: Base64 key bytes&lt;/font&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="92" width="218" x="1285" y="184" as="geometry" />
+        </mxCell>
+        <mxCell id="XVQUhR2G2x-bOHj4k4DN-21" parent="1" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;strokeWidth=1.5;fontFamily=Helvetica;fontSize=22;fontColor=#127B66;fontStyle=1;align=left;verticalAlign=middle;spacing=16;spacing=0;align=center;" value="mTLS&lt;br&gt;&lt;font style=&quot;font-size: 16px;&quot;&gt;( HTTPS )&lt;/font&gt;" vertex="1">
+          <mxGeometry height="23" width="140" x="1135" y="226" as="geometry" />
+        </mxCell>
+        <mxCell id="XVQUhR2G2x-bOHj4k4DN-22" parent="1" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=none;strokeWidth=1.5;fontFamily=Helvetica;fontSize=16;fontColor=#127B66;fontStyle=1;align=left;verticalAlign=middle;spacing=16;spacing=5;align=center;" value="Shared PSK · identical 32-byte secret · provisioned beforehand" vertex="1">
+          <mxGeometry height="34" width="510" x="950" y="489" as="geometry" />
+        </mxCell>
+        <mxCell id="XVQUhR2G2x-bOHj4k4DN-23" parent="1" style="shape=actor;whiteSpace=wrap;html=1;fillColor=#f5f5f5;fontColor=#333333;strokeColor=#666666;" value="" vertex="1">
+          <mxGeometry height="57" width="45" x="95" y="90" as="geometry" />
+        </mxCell>
+        <mxCell id="XVQUhR2G2x-bOHj4k4DN-24" parent="1" style="shape=actor;whiteSpace=wrap;html=1;fillColor=#f5f5f5;fontColor=#333333;strokeColor=#666666;" value="" vertex="1">
+          <mxGeometry height="57" width="45" x="925" y="90" as="geometry" />
+        </mxCell>
+        <mxCell id="XVQUhR2G2x-bOHj4k4DN-25" connectable="0" parent="1" style="group" value="" vertex="1">
+          <mxGeometry height="78" width="45" x="95" y="353" as="geometry" />
+        </mxCell>
+        <mxCell id="XVQUhR2G2x-bOHj4k4DN-26" parent="XVQUhR2G2x-bOHj4k4DN-25" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;fontColor=#333333;strokeColor=#666666;" value="" vertex="1">
+          <mxGeometry height="74" width="41" x="2" y="2" as="geometry" />
+        </mxCell>
+        <mxCell id="XVQUhR2G2x-bOHj4k4DN-27" parent="XVQUhR2G2x-bOHj4k4DN-25" style="sketch=0;outlineConnect=0;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;pointerEvents=1;shape=mxgraph.aws4.traditional_server;fillColor=#333333;fontColor=#333333;strokeColor=#666666;" value="" vertex="1">
+          <mxGeometry height="78" width="45" as="geometry" />
+        </mxCell>
+        <mxCell id="XVQUhR2G2x-bOHj4k4DN-28" connectable="0" parent="1" style="group" value="" vertex="1">
+          <mxGeometry height="78" width="45" x="925" y="353" as="geometry" />
+        </mxCell>
+        <mxCell id="XVQUhR2G2x-bOHj4k4DN-29" parent="XVQUhR2G2x-bOHj4k4DN-28" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;fontColor=#333333;strokeColor=#666666;" value="" vertex="1">
+          <mxGeometry height="74" width="41" x="2" y="2" as="geometry" />
+        </mxCell>
+        <mxCell id="XVQUhR2G2x-bOHj4k4DN-30" parent="XVQUhR2G2x-bOHj4k4DN-28" style="sketch=0;outlineConnect=0;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;pointerEvents=1;shape=mxgraph.aws4.traditional_server;fillColor=#333333;fontColor=#333333;strokeColor=#666666;" value="" vertex="1">
+          <mxGeometry height="78" width="45" as="geometry" />
+        </mxCell>
+        <mxCell id="v7-flow-note" value="&lt;b&gt;Format v7&lt;/b&gt; · Same 32-byte PSK and SAE code assignments on both stubs. Public UUID contains encrypted metadata.&lt;br&gt;Invalid ID: HTTP 400; wrong SAE pair: HTTP 401." vertex="1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;fontFamily=Helvetica;fontSize=17;fontColor=#10243A;align=left;verticalAlign=middle;spacing=10;">
+          <mxGeometry as="geometry" x="64" y="550" width="1452" height="66" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="QdgP3BnbA23baYL7UbmT" name="Key ID Layout">
+    <mxGraphModel dx="2054" dy="1206" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="800" math="0" shadow="0" background="#FFFFFF">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="H72MMAwUgzyrUTCpQraT-1" parent="1" style="rounded=0;arcSize=10;whiteSpace=wrap;html=1;fillColor=#F8FAFD;strokeColor=#D4E0EA;strokeWidth=1.5;fontFamily=Helvetica;fontSize=18;fontColor=#10243A;fontStyle=0;align=left;verticalAlign=middle;spacing=16;container=0;pointerEvents=0;" value="" vertex="1">
+          <mxGeometry height="219" width="1500" x="40" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="H72MMAwUgzyrUTCpQraT-2" parent="1" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;strokeWidth=1.5;fontFamily=Helvetica;fontSize=25;fontColor=#10243A;fontStyle=1;align=left;verticalAlign=middle;spacing=16;spacing=0;" value="&lt;b&gt;Key ID layout · format v7&lt;/b&gt; — 16-byte plaintext P → AES-256 → 16-byte public ciphertext C" vertex="1">
+          <mxGeometry height="33" width="1456" x="62" y="55" as="geometry" />
+        </mxCell>
+        <mxCell id="H72MMAwUgzyrUTCpQraT-3" parent="1" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#FBDDE2;strokeColor=#567086;strokeWidth=1.5;fontFamily=Helvetica;fontSize=17;fontColor=#10243A;fontStyle=1;align=left;verticalAlign=middle;spacing=16;rounded=0;spacing=0;align=center;" value="Length" vertex="1">
+          <mxGeometry height="49" width="180" x="70" y="127" as="geometry" />
+        </mxCell>
+        <mxCell id="H72MMAwUgzyrUTCpQraT-4" parent="1" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#FFF0C7;strokeColor=#567086;strokeWidth=1.5;fontFamily=Helvetica;fontSize=17;fontColor=#10243A;fontStyle=1;align=left;verticalAlign=middle;spacing=16;rounded=0;spacing=0;align=center;" value="Master SAE" vertex="1">
+          <mxGeometry height="49" width="180" x="250" y="127" as="geometry" />
+        </mxCell>
+        <mxCell id="H72MMAwUgzyrUTCpQraT-5" parent="1" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#FFF0C7;strokeColor=#567086;strokeWidth=1.5;fontFamily=Helvetica;fontSize=17;fontColor=#10243A;fontStyle=1;align=left;verticalAlign=middle;spacing=16;rounded=0;spacing=0;align=center;" value="Slave SAE" vertex="1">
+          <mxGeometry height="49" width="180" x="430" y="127" as="geometry" />
+        </mxCell>
+        <mxCell id="H72MMAwUgzyrUTCpQraT-9" parent="1" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#D8EBFD;strokeColor=#567086;strokeWidth=1.5;fontFamily=Helvetica;fontSize=17;fontColor=#10243A;fontStyle=1;align=left;verticalAlign=middle;spacing=16;rounded=0;spacing=0;align=center;" value="72 OS-random bits · no reserved UUID bits" vertex="1">
+          <mxGeometry height="49" width="810" x="610" y="127" as="geometry" />
+        </mxCell>
+        <mxCell id="H72MMAwUgzyrUTCpQraT-10" parent="1" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#D8C7FA;strokeColor=#567086;strokeWidth=1.5;fontFamily=Helvetica;fontSize=17;fontColor=#10243A;fontStyle=1;align=left;verticalAlign=middle;spacing=16;rounded=0;spacing=0;align=center;" value="Check" vertex="1">
+          <mxGeometry height="49" width="90" x="1420" y="127" as="geometry" />
+        </mxCell>
+        <mxCell id="H72MMAwUgzyrUTCpQraT-11" parent="1" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;strokeWidth=1.5;fontFamily=Helvetica;fontSize=14;fontColor=#52677C;fontStyle=0;align=left;verticalAlign=middle;spacing=16;spacing=0;align=center;" value="0" vertex="1">
+          <mxGeometry height="18" width="90" x="70" y="108" as="geometry" />
+        </mxCell>
+        <mxCell id="H72MMAwUgzyrUTCpQraT-12" parent="1" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;strokeWidth=1.5;fontFamily=Helvetica;fontSize=14;fontColor=#52677C;fontStyle=0;align=left;verticalAlign=middle;spacing=16;spacing=0;align=center;" value="1" vertex="1">
+          <mxGeometry height="18" width="90" x="160" y="108" as="geometry" />
+        </mxCell>
+        <mxCell id="H72MMAwUgzyrUTCpQraT-13" parent="1" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;strokeWidth=1.5;fontFamily=Helvetica;fontSize=14;fontColor=#52677C;fontStyle=0;align=left;verticalAlign=middle;spacing=16;spacing=0;align=center;" value="2" vertex="1">
+          <mxGeometry height="18" width="90" x="250" y="108" as="geometry" />
+        </mxCell>
+        <mxCell id="H72MMAwUgzyrUTCpQraT-14" parent="1" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;strokeWidth=1.5;fontFamily=Helvetica;fontSize=14;fontColor=#52677C;fontStyle=0;align=left;verticalAlign=middle;spacing=16;spacing=0;align=center;" value="3" vertex="1">
+          <mxGeometry height="18" width="90" x="340" y="108" as="geometry" />
+        </mxCell>
+        <mxCell id="H72MMAwUgzyrUTCpQraT-15" parent="1" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;strokeWidth=1.5;fontFamily=Helvetica;fontSize=14;fontColor=#52677C;fontStyle=0;align=left;verticalAlign=middle;spacing=16;spacing=0;align=center;" value="4" vertex="1">
+          <mxGeometry height="18" width="90" x="430" y="108" as="geometry" />
+        </mxCell>
+        <mxCell id="H72MMAwUgzyrUTCpQraT-16" parent="1" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;strokeWidth=1.5;fontFamily=Helvetica;fontSize=14;fontColor=#52677C;fontStyle=0;align=left;verticalAlign=middle;spacing=16;spacing=0;align=center;" value="5" vertex="1">
+          <mxGeometry height="18" width="90" x="520" y="108" as="geometry" />
+        </mxCell>
+        <mxCell id="H72MMAwUgzyrUTCpQraT-17" parent="1" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;strokeWidth=1.5;fontFamily=Helvetica;fontSize=14;fontColor=#52677C;fontStyle=0;align=left;verticalAlign=middle;spacing=16;spacing=0;align=center;" value="6" vertex="1">
+          <mxGeometry height="18" width="90" x="610" y="108" as="geometry" />
+        </mxCell>
+        <mxCell id="H72MMAwUgzyrUTCpQraT-18" parent="1" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;strokeWidth=1.5;fontFamily=Helvetica;fontSize=14;fontColor=#52677C;fontStyle=0;align=left;verticalAlign=middle;spacing=16;spacing=0;align=center;" value="7" vertex="1">
+          <mxGeometry height="18" width="90" x="700" y="108" as="geometry" />
+        </mxCell>
+        <mxCell id="H72MMAwUgzyrUTCpQraT-19" parent="1" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;strokeWidth=1.5;fontFamily=Helvetica;fontSize=14;fontColor=#52677C;fontStyle=0;align=left;verticalAlign=middle;spacing=16;spacing=0;align=center;" value="8" vertex="1">
+          <mxGeometry height="18" width="90" x="790" y="108" as="geometry" />
+        </mxCell>
+        <mxCell id="H72MMAwUgzyrUTCpQraT-20" parent="1" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;strokeWidth=1.5;fontFamily=Helvetica;fontSize=14;fontColor=#52677C;fontStyle=0;align=left;verticalAlign=middle;spacing=16;spacing=0;align=center;" value="9" vertex="1">
+          <mxGeometry height="18" width="90" x="880" y="108" as="geometry" />
+        </mxCell>
+        <mxCell id="H72MMAwUgzyrUTCpQraT-21" parent="1" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;strokeWidth=1.5;fontFamily=Helvetica;fontSize=14;fontColor=#52677C;fontStyle=0;align=left;verticalAlign=middle;spacing=16;spacing=0;align=center;" value="10" vertex="1">
+          <mxGeometry height="18" width="90" x="970" y="108" as="geometry" />
+        </mxCell>
+        <mxCell id="H72MMAwUgzyrUTCpQraT-22" parent="1" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;strokeWidth=1.5;fontFamily=Helvetica;fontSize=14;fontColor=#52677C;fontStyle=0;align=left;verticalAlign=middle;spacing=16;spacing=0;align=center;" value="11" vertex="1">
+          <mxGeometry height="18" width="90" x="1060" y="108" as="geometry" />
+        </mxCell>
+        <mxCell id="H72MMAwUgzyrUTCpQraT-23" parent="1" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;strokeWidth=1.5;fontFamily=Helvetica;fontSize=14;fontColor=#52677C;fontStyle=0;align=left;verticalAlign=middle;spacing=16;spacing=0;align=center;" value="12" vertex="1">
+          <mxGeometry height="18" width="90" x="1150" y="108" as="geometry" />
+        </mxCell>
+        <mxCell id="H72MMAwUgzyrUTCpQraT-24" parent="1" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;strokeWidth=1.5;fontFamily=Helvetica;fontSize=14;fontColor=#52677C;fontStyle=0;align=left;verticalAlign=middle;spacing=16;spacing=0;align=center;" value="13" vertex="1">
+          <mxGeometry height="18" width="90" x="1240" y="108" as="geometry" />
+        </mxCell>
+        <mxCell id="H72MMAwUgzyrUTCpQraT-25" parent="1" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;strokeWidth=1.5;fontFamily=Helvetica;fontSize=14;fontColor=#52677C;fontStyle=0;align=left;verticalAlign=middle;spacing=16;spacing=0;align=center;" value="14" vertex="1">
+          <mxGeometry height="18" width="90" x="1330" y="108" as="geometry" />
+        </mxCell>
+        <mxCell id="H72MMAwUgzyrUTCpQraT-26" parent="1" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;strokeWidth=1.5;fontFamily=Helvetica;fontSize=14;fontColor=#52677C;fontStyle=0;align=left;verticalAlign=middle;spacing=16;spacing=0;align=center;" value="15" vertex="1">
+          <mxGeometry height="18" width="90" x="1420" y="108" as="geometry" />
+        </mxCell>
+        <mxCell id="H72MMAwUgzyrUTCpQraT-27" parent="1" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;strokeWidth=1.5;fontFamily=Helvetica;fontSize=15;fontColor=#52677C;fontStyle=0;align=left;verticalAlign=middle;spacing=16;spacing=0;" value="Bytes 0–1: length, 1–8192 bytes; bytes 2–5: SAE codes.&lt;br&gt;Unsigned big-endian. Bound: codes 1–65535; unbound: both 0." vertex="1">
+          <mxGeometry height="57" width="530" x="70" y="188" as="geometry" />
+        </mxCell>
+        <mxCell id="H72MMAwUgzyrUTCpQraT-28" parent="1" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;strokeWidth=1.5;fontFamily=Helvetica;fontSize=15;fontColor=#52677C;fontStyle=0;align=left;verticalAlign=middle;spacing=16;spacing=0;" value="Bytes 6–14: nine fresh random bytes per attempt.&lt;br&gt;The version and variant are checked only after encryption." vertex="1">
+          <mxGeometry height="57" width="660" x="610" y="188" as="geometry" />
+        </mxCell>
+        <mxCell id="H72MMAwUgzyrUTCpQraT-29" parent="1" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;strokeWidth=1.5;fontFamily=Helvetica;fontSize=15;fontColor=#52677C;fontStyle=0;align=left;verticalAlign=middle;spacing=16;spacing=0;align=center;" value="Byte 15: keyed check&lt;br&gt;PRK + P[0:15]" vertex="1">
+          <mxGeometry height="57" width="210" x="1300" y="188" as="geometry" />
+        </mxCell>
+        <mxCell id="v7-plaintext" value="PLAINTEXT P · internal only" vertex="1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;fontFamily=Helvetica;fontSize=14;fontColor=#10243A;align=left;verticalAlign=middle;spacing=10;">
+          <mxGeometry as="geometry" x="70" y="88" width="1440" height="25" />
+        </mxCell>
+        <mxCell id="v7-aes" value="↓  AES-256 encrypts the entire block using the PSK-derived AES key  ↓" vertex="1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#EFF7FF;strokeColor=#1663A6;fontFamily=Helvetica;fontSize=18;fontColor=#10243A;align=center;verticalAlign=middle;spacing=10;">
+          <mxGeometry as="geometry" x="70" y="262" width="1440" height="45" />
+        </mxCell>
+        <mxCell id="v7-cipher-title" value="PUBLIC CIPHERTEXT C · displayed as a lowercase, hyphenated UUID" vertex="1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;fontFamily=Helvetica;fontSize=18;fontColor=#10243A;align=left;verticalAlign=middle;spacing=10;">
+          <mxGeometry as="geometry" x="70" y="321" width="1440" height="30" />
+        </mxCell>
+        <mxCell id="v7-cipher-a" value="Encrypted bits" vertex="1" parent="1" style="whiteSpace=wrap;html=1;fillColor=#EFF7FF;strokeColor=#1663A6;fontFamily=Helvetica;fontSize=16;fontColor=#10243A;align=center;spacing=0;">
+          <mxGeometry as="geometry" x="70" y="365" width="540" height="49" />
+        </mxCell>
+        <mxCell id="v7-cipher-v" value="4" vertex="1" parent="1" style="whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#1663A6;fontFamily=Helvetica;fontSize=16;fontColor=#10243A;align=center;spacing=0;">
+          <mxGeometry as="geometry" x="610" y="365" width="45" height="49" />
+        </mxCell>
+        <mxCell id="v7-cipher-b" value="Encrypted" vertex="1" parent="1" style="whiteSpace=wrap;html=1;fillColor=#EFF7FF;strokeColor=#1663A6;fontFamily=Helvetica;fontSize=16;fontColor=#10243A;align=center;spacing=0;">
+          <mxGeometry as="geometry" x="655" y="365" width="135" height="49" />
+        </mxCell>
+        <mxCell id="v7-cipher-var" value="10" vertex="1" parent="1" style="whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#1663A6;fontFamily=Helvetica;fontSize=16;fontColor=#10243A;align=center;spacing=0;">
+          <mxGeometry as="geometry" x="790" y="365" width="22.5" height="49" />
+        </mxCell>
+        <mxCell id="v7-cipher-c" value="Encrypted bits" vertex="1" parent="1" style="whiteSpace=wrap;html=1;fillColor=#EFF7FF;strokeColor=#1663A6;fontFamily=Helvetica;fontSize=16;fontColor=#10243A;align=center;spacing=0;">
+          <mxGeometry as="geometry" x="812.5" y="365" width="697.5" height="49" />
+        </mxCell>
+        <mxCell id="v7-filter" value="&lt;b&gt;Accept only:&lt;/b&gt; C[6] high 4 bits = 0100 (version 4), and C[8] high 2 bits = 10 (variant).&lt;br&gt;Otherwise regenerate P[6:15], recompute the check, and encrypt again. Never overwrite ciphertext bits." vertex="1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;fontFamily=Helvetica;fontSize=18;fontColor=#10243A;align=left;verticalAlign=middle;spacing=10;">
+          <mxGeometry as="geometry" x="70" y="428" width="1440" height="65" />
+        </mxCell>
+        <mxCell id="v7-limits" value="About 64 attempts per ID; 4096 failed attempts → HTTP 503. Approximately 2⁶⁶ accepted IDs per fixed SAE pair / length.&lt;br&gt;Checksum is an 8-bit error check, not authentication. Format v7 is unrelated to UUIDv7; older plaintext UUIDv8 IDs are rejected." vertex="1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;fontFamily=Helvetica;fontSize=17;fontColor=#10243A;align=left;verticalAlign=middle;spacing=10;">
+          <mxGeometry as="geometry" x="70" y="501" width="1440" height="65" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="sBJFMoNtCSBWDahgKInY" name="Key Derivation">
+    <mxGraphModel dx="2054" dy="1206" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="800" math="0" shadow="0" background="#FFFFFF">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="v7-title" value="&lt;b&gt;Key derivation · format v7&lt;/b&gt; — HKDF-SHA512 + AES-256" vertex="1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;fontFamily=Helvetica;fontSize=25;fontColor=#10243A;align=left;verticalAlign=middle;spacing=10;">
+          <mxGeometry as="geometry" x="40" y="30" width="1500" height="45" />
+        </mxCell>
+        <mxCell id="panel-0" value="" vertex="1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#EFF7FF;strokeColor=#1663A6;fontFamily=Helvetica;fontSize=18;fontColor=#10243A;align=left;verticalAlign=middle;spacing=10;">
+          <mxGeometry as="geometry" x="40" y="100" width="480" height="260" />
+        </mxCell>
+        <mxCell id="title-0" value="&lt;b&gt;1  Extract shared secret&lt;/b&gt;" vertex="1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;fontFamily=Helvetica;fontSize=21;fontColor=#10243A;align=left;verticalAlign=middle;spacing=10;">
+          <mxGeometry as="geometry" x="52" y="108" width="456" height="38" />
+        </mxCell>
+        <mxCell id="formula-0" value="PRK = HKDF-Extract-SHA512(&lt;br&gt;  salt = &quot;qkd-stub:psk&quot; || 0x00,&lt;br&gt;  IKM = shared 32-byte PSK)" vertex="1" parent="1" style="whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;fontFamily=Courier New;fontSize=17;fontColor=#10243A;align=left;verticalAlign=middle;spacing=8;">
+          <mxGeometry as="geometry" x="52" y="155" width="456" height="127" />
+        </mxCell>
+        <mxCell id="note-0" value="Both stubs compute the same PRK." vertex="1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;fontFamily=Helvetica;fontSize=16;fontColor=#10243A;align=left;verticalAlign=middle;spacing=10;">
+          <mxGeometry as="geometry" x="52" y="292" width="456" height="58" />
+        </mxCell>
+        <mxCell id="panel-1" value="" vertex="1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#EFF7FF;strokeColor=#1663A6;fontFamily=Helvetica;fontSize=18;fontColor=#10243A;align=left;verticalAlign=middle;spacing=10;">
+          <mxGeometry as="geometry" x="550" y="100" width="480" height="260" />
+        </mxCell>
+        <mxCell id="title-1" value="&lt;b&gt;2  Derive AES key&lt;/b&gt;" vertex="1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;fontFamily=Helvetica;fontSize=21;fontColor=#10243A;align=left;verticalAlign=middle;spacing=10;">
+          <mxGeometry as="geometry" x="562" y="108" width="456" height="38" />
+        </mxCell>
+        <mxCell id="formula-1" value="AES_key = Expand(PRK,&lt;br&gt;  &quot;qkd-stub:id-encryption:v7&quot; || 0x00,&lt;br&gt;  32)" vertex="1" parent="1" style="whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;fontFamily=Courier New;fontSize=17;fontColor=#10243A;align=left;verticalAlign=middle;spacing=8;">
+          <mxGeometry as="geometry" x="562" y="155" width="456" height="127" />
+        </mxCell>
+        <mxCell id="note-1" value="AES-256 key: 32 bytes." vertex="1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;fontFamily=Helvetica;fontSize=16;fontColor=#10243A;align=left;verticalAlign=middle;spacing=10;">
+          <mxGeometry as="geometry" x="562" y="292" width="456" height="58" />
+        </mxCell>
+        <mxCell id="panel-2" value="" vertex="1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#EFF7FF;strokeColor=#1663A6;fontFamily=Helvetica;fontSize=18;fontColor=#10243A;align=left;verticalAlign=middle;spacing=10;">
+          <mxGeometry as="geometry" x="1060" y="100" width="480" height="260" />
+        </mxCell>
+        <mxCell id="title-2" value="&lt;b&gt;3  Build plaintext + checksum&lt;/b&gt;" vertex="1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;fontFamily=Helvetica;fontSize=21;fontColor=#10243A;align=left;verticalAlign=middle;spacing=10;">
+          <mxGeometry as="geometry" x="1072" y="108" width="456" height="38" />
+        </mxCell>
+        <mxCell id="formula-2" value="P[15] = Expand(PRK,&lt;br&gt;  &quot;qkd-stub:id-check:v7&quot; || 0x00&lt;br&gt;  || P[0:15], 1)[0]" vertex="1" parent="1" style="whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;fontFamily=Courier New;fontSize=17;fontColor=#10243A;align=left;verticalAlign=middle;spacing=8;">
+          <mxGeometry as="geometry" x="1072" y="155" width="456" height="127" />
+        </mxCell>
+        <mxCell id="note-2" value="P contains length, SAE codes and 72 random bits." vertex="1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;fontFamily=Helvetica;fontSize=16;fontColor=#10243A;align=left;verticalAlign=middle;spacing=10;">
+          <mxGeometry as="geometry" x="1072" y="292" width="456" height="58" />
+        </mxCell>
+        <mxCell id="panel-3" value="" vertex="1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#EFFAF5;strokeColor=#127B66;fontFamily=Helvetica;fontSize=18;fontColor=#10243A;align=left;verticalAlign=middle;spacing=10;">
+          <mxGeometry as="geometry" x="40" y="390" width="480" height="260" />
+        </mxCell>
+        <mxCell id="title-3" value="&lt;b&gt;4  Encrypt and filter&lt;/b&gt;" vertex="1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;fontFamily=Helvetica;fontSize=21;fontColor=#10243A;align=left;verticalAlign=middle;spacing=10;">
+          <mxGeometry as="geometry" x="52" y="398" width="456" height="38" />
+        </mxCell>
+        <mxCell id="formula-3" value="C = AES-256-Encrypt-Block(AES_key, P)&lt;br&gt;&lt;br&gt;Accept: (C[6] &gt;&gt; 4) = 4&lt;br&gt;    and (C[8] &gt;&gt; 6) = 2" vertex="1" parent="1" style="whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;fontFamily=Courier New;fontSize=17;fontColor=#10243A;align=left;verticalAlign=middle;spacing=8;">
+          <mxGeometry as="geometry" x="52" y="445" width="456" height="127" />
+        </mxCell>
+        <mxCell id="note-3" value="Else refresh random bytes, recheck and re-encrypt.&lt;br&gt;Mean: 64 attempts; limit: 4096 → HTTP 503." vertex="1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;fontFamily=Helvetica;fontSize=16;fontColor=#10243A;align=left;verticalAlign=middle;spacing=10;">
+          <mxGeometry as="geometry" x="52" y="582" width="456" height="58" />
+        </mxCell>
+        <mxCell id="panel-4" value="" vertex="1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#EFFAF5;strokeColor=#127B66;fontFamily=Helvetica;fontSize=18;fontColor=#10243A;align=left;verticalAlign=middle;spacing=10;">
+          <mxGeometry as="geometry" x="550" y="390" width="480" height="260" />
+        </mxCell>
+        <mxCell id="title-4" value="&lt;b&gt;5  Derive output key&lt;/b&gt;" vertex="1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;fontFamily=Helvetica;fontSize=21;fontColor=#10243A;align=left;verticalAlign=middle;spacing=10;">
+          <mxGeometry as="geometry" x="562" y="398" width="456" height="38" />
+        </mxCell>
+        <mxCell id="formula-4" value="key = Expand(PRK,&lt;br&gt;  &quot;qkd-stub:key:v7&quot; || 0x00 || C,&lt;br&gt;  key_length_bytes)" vertex="1" parent="1" style="whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;fontFamily=Courier New;fontSize=17;fontColor=#10243A;align=left;verticalAlign=middle;spacing=8;">
+          <mxGeometry as="geometry" x="562" y="445" width="456" height="127" />
+        </mxCell>
+        <mxCell id="note-4" value="All 128 ciphertext bits are used.&lt;br&gt;Output: 1–8192 bytes, returned as Base64." vertex="1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;fontFamily=Helvetica;fontSize=16;fontColor=#10243A;align=left;verticalAlign=middle;spacing=10;">
+          <mxGeometry as="geometry" x="562" y="582" width="456" height="58" />
+        </mxCell>
+        <mxCell id="panel-5" value="" vertex="1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#EFFAF5;strokeColor=#127B66;fontFamily=Helvetica;fontSize=18;fontColor=#10243A;align=left;verticalAlign=middle;spacing=10;">
+          <mxGeometry as="geometry" x="1060" y="390" width="480" height="260" />
+        </mxCell>
+        <mxCell id="title-5" value="&lt;b&gt;Retrieval on the second stub&lt;/b&gt;" vertex="1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;fontFamily=Helvetica;fontSize=21;fontColor=#10243A;align=left;verticalAlign=middle;spacing=10;">
+          <mxGeometry as="geometry" x="1072" y="398" width="456" height="38" />
+        </mxCell>
+        <mxCell id="formula-5" value="Validate UUID notation + v4 bits.&lt;br&gt;Decrypt C → P; validate length + check.&lt;br&gt;Authorize the decrypted SAE pair.&lt;br&gt;Run step 5 using the original C." vertex="1" parent="1" style="whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;fontFamily=Courier New;fontSize=17;fontColor=#10243A;align=left;verticalAlign=middle;spacing=8;">
+          <mxGeometry as="geometry" x="1072" y="445" width="456" height="127" />
+        </mxCell>
+        <mxCell id="note-5" value="Invalid ID → 400; wrong SAE pair → 401.&lt;br&gt;Any invalid member rejects the whole batch." vertex="1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;fontFamily=Helvetica;fontSize=16;fontColor=#10243A;align=left;verticalAlign=middle;spacing=10;">
+          <mxGeometry as="geometry" x="1072" y="582" width="456" height="58" />
+        </mxCell>
+        <mxCell id="v7-legend" value="Expand = HKDF-Expand-SHA512. Labels are ASCII; || means concatenation; 0x00 is one zero byte.&lt;br&gt;P and C are raw bytes, not UUID text. Slices exclude the upper bound. The checksum is not authentication." vertex="1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;fontFamily=Helvetica;fontSize=17;fontColor=#10243A;align=left;verticalAlign=middle;spacing=10;">
+          <mxGeometry as="geometry" x="40" y="671" width="1500" height="60" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
