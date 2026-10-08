@@ -4,6 +4,18 @@ Run the commands below in **Command Prompt (cmd.exe)** from the repository root.
 No WSL or Bash is required. GitHub Actions tests the native Windows build and all
 integration tests on Windows Server 2022, alongside Ubuntu 24.04.
 
+## Signed executable
+
+Once a release is published, download `qkd-stub.exe` and its SHA-256 checksum from
+[GitHub Releases](https://github.com/LUMII-Syslab/qkd-stub/releases).
+You can skip Rust and Visual Studio Build Tools when using this executable.
+Place it in `target\release\qkd-stub.exe` in a matching source checkout to use
+the commands below, and skip `cargo build`. The scripts, examples, Python and
+OpenSSL are still needed to generate the test credentials shown here.
+
+Maintainers: see [Windows signing and releases](windows-signing.md) for Azure
+setup, manual builds and release storage.
+
 ## Prerequisites
 
 - Rust via [rustup](https://rustup.rs/), using the MSVC toolchain.

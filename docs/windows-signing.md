@@ -1,0 +1,76 @@
+# Windows signing and releases
+
+`.github/workflows/windows-release.yml` runs the Windows test suite, builds the
+x64 MSVC release executable with `Cargo.lock`, signs it using Azure Artifact
+Signing (formerly Trusted Signing), and checks the signature, timestamp and
+expected institute publisher before uploading. It also runs the signed binary's
+`--version` command and calculates its SHA-256 checksum after signing.
+
+## One-time configuration
+
+Signing uses a dedicated Microsoft Entra app, `qkd-stub-github-signing`, with
+OpenID Connect (OIDC). GitHub stores only non-secret configuration variables;
+no client secret is needed.
+
+1. In `LUMII-Syslab/qkd-stub`, create a GitHub environment named **release**.
+   Restrict its deployment branches and tags to branch `main` and tags `v*`.
+   Add required reviewers if releases need approval; restrict who can create
+   release tags using repository rulesets.
+2. In Microsoft Entra ID, open the `qkd-stub-github-signing` app registration.
+   Under **Certificates & secrets →
+   Federated credentials**, add a GitHub Actions credential for organization
+   `LUMII-Syslab`, repository `qkd-stub`, entity type **Environment**, name
+   `release`. The exact values are:
+
+   - Issuer: `https://token.actions.githubusercontent.com`
+   - Subject: `repo:LUMII-Syslab/qkd-stub:environment:release`
+   - Audience: `api://AzureADTokenExchange`
+
+   Grant the app's service principal **Artifact Signing Certificate Profile
+   Signer** on the intended certificate profile. The Azure portal may still show
+   the former Trusted Signing name.
+3. In the GitHub `release` environment, set these **variables**:
+
+   | Variable | Value |
+   | --- | --- |
+   | `AZURE_CLIENT_ID` | `7dadb396-f104-4459-b5ba-9db9c81ea3a4` |
+   | `AZURE_TENANT_ID` | `56bebab0-1dd7-4b53-8589-dc4a93534d66` |
+   | `ARTIFACT_SIGNING_ENDPOINT` | `https://neu.codesigning.azure.net/` |
+   | `ARTIFACT_SIGNING_ACCOUNT` | Your Azure signing account name |
+   | `ARTIFACT_SIGNING_PROFILE` | Your certificate profile name |
+
+   No client secret or subscription ID is needed: the workflow uses tenant-level
+   Azure login with `allow-no-subscriptions: true`. The expected publisher is
+   `CN=Latvijas Universitātes Matemātikas un informātikas institūts`; if choosing
+   a profile with another publisher, update `SIGNER_SUBJECT` in the workflow.
+
+See [Azure's OIDC signing setup](https://github.com/Azure/artifact-signing-action/blob/main/docs/OIDC.md)
+and [GitHub's secret scopes](https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/use-secrets).
+
+## Build and download
+
+- **Manual build:** Actions → Signed Windows executable → Run workflow on `main`.
+  Download the `qkd-stub-windows-x64-signed` artifact from the successful run.
+  It contains `qkd-stub.exe` and `qkd-stub.exe.sha256` and expires after 30 days.
+- **Versioned release:** push a tag matching `Cargo.toml`, for example `v0.3.0`
+  when the package version is `0.3.0`. The workflow creates a **draft** GitHub
+  Release with those two files attached. Review the notes and publish it from
+  [Releases](https://github.com/LUMII-Syslab/qkd-stub/releases). Mark preview
+  versions as prereleases before publishing. Release assets remain until deleted
+  and provide public downloads for this public repository.
+
+Signing is limited to this repository's `main` branch and `v*` tags and is never
+triggered by pull requests. A failed login, signature check or timestamp check
+prevents uploads; there is no unsigned fallback. A rerun for a tag with an existing
+release fails at release creation rather than replacing its assets.
+
+Verify a downloaded executable in PowerShell:
+
+```powershell
+Get-AuthenticodeSignature .\qkd-stub.exe | Format-List Status, SignerCertificate, TimeStamperCertificate
+Get-FileHash .\qkd-stub.exe -Algorithm SHA256
+Get-Content .\qkd-stub.exe.sha256
+```
+
+The artifact is the command-line server, not an installer. Test credentials are
+generated separately; no private keys or PSKs are packaged.

@@ -39,6 +39,8 @@ a software test stub, not real QKD, and PSK-derived keys do not have forward sec
 
 Native Windows setup and `.bat` scripts: [Windows quickstart](docs/windows.md).
 GitHub Actions runs the full test suite on Windows and Linux.
+The [signed Windows build workflow](docs/windows-signing.md) produces an x64
+`qkd-stub.exe`, with tagged builds stored in GitHub Releases after publication.
 
 On Linux: Rust 1.89+, a C compiler, OpenSSL 3, Python 3.11+, and curl for the
 examples below. On Ubuntu 24.04 (verified on a fresh container):
