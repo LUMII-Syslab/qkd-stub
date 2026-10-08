@@ -17,14 +17,17 @@ no client secret is needed.
    Add required reviewers if releases need approval; restrict who can create
    release tags using repository rulesets.
 2. In Microsoft Entra ID, open the `qkd-stub-github-signing` app registration.
-   Under **Certificates & secrets →
-   Federated credentials**, add a GitHub Actions credential for organization
-   `LUMII-Syslab`, repository `qkd-stub`, entity type **Environment**, name
-   `release`. The exact values are:
+   Under **Certificates & secrets → Federated credentials → Add credential**,
+   select **Other issuer** and use an explicit subject (not a matching expression).
+   Name the credential `qkd-stub-release`. The exact values are:
 
    - Issuer: `https://token.actions.githubusercontent.com`
-   - Subject: `repo:LUMII-Syslab/qkd-stub:environment:release`
+   - Subject: `repo:LUMII-Syslab@14790263/qkd-stub@1405879590:environment:release`
    - Audience: `api://AzureADTokenExchange`
+
+   This repository uses GitHub's immutable OIDC subject format, which includes
+   owner and repository IDs. The older name-only subject will fail with
+   `AADSTS700213`. See [Microsoft's migration guide](https://learn.microsoft.com/en-us/entra/workload-id/workload-identities-github-immutable-subjects).
 
    Grant the app's service principal **Artifact Signing Certificate Profile
    Signer** on the intended certificate profile. The Azure portal may still show
