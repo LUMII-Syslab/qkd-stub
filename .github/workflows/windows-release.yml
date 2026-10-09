@@ -33,6 +33,7 @@ jobs:
     env:
       RUSTUP_TOOLCHAIN: stable
       CARGO_TERM_COLOR: always
+      RUSTFLAGS: -C target-feature=+crt-static
       SIGNER_SUBJECT: CN=Latvijas Universitātes Matemātikas un informātikas institūts
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -93,6 +94,10 @@ jobs:
             throw "Unexpected signer: $($signature.SignerCertificate.Subject)"
           }
           & ./out/qkd-stub.exe --version
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          & ./out/qkd-stub.exe demo init --dir "$env:RUNNER_TEMP/qkd-release-demo"
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          & ./out/qkd-stub.exe --config "$env:RUNNER_TEMP/qkd-release-demo/a.toml" check
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           $hash = (Get-FileHash out/qkd-stub.exe -Algorithm SHA256).Hash.ToLowerInvariant()
           "$hash  qkd-stub.exe" | Set-Content out/qkd-stub.exe.sha256 -Encoding ascii

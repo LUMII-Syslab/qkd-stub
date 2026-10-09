@@ -1,6 +1,6 @@
 [package]
 name = "qkd-stub"
-version = "0.3.0"
+version = "0.4.0"
 edition = "2024"
 description = "Independent deterministic ETSI GS QKD 014 HTTPS test endpoints"
 license = "MIT"
@@ -18,7 +18,14 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "signal", "time"] }
 uuid = "1"
-x509-parser = "0.18"
+x509-parser = { version = "0.18", features = ["verify"] }
 tokio-rustls = { version = "0.26", default-features = false, features = ["ring", "tls12"] }
 tower = { version = "0.5", features = ["util"] }
 toml = "1.1.6"
+rcgen = { version = "0.14", default-features = false, features = ["ring", "pem", "x509-parser"] }
+tempfile = "3"
+time = "0.3"
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.61", features = ["Win32_Security_Authorization", "Win32_Storage_FileSystem", "Win32_System_Memory"] }

@@ -1,22 +1,35 @@
 # Windows quickstart
 
-Run the commands below in **Command Prompt (cmd.exe)** from the repository root.
-No WSL or Bash is required. GitHub Actions tests the native Windows build and all
+The downloaded executable can provision and test endpoints on its own. No WSL,
+Bash, OpenSSL, Python, or Rust is needed. GitHub Actions tests the native Windows build and all
 integration tests on Windows Server 2022, alongside Ubuntu 24.04.
 
 ## Signed executable
 
-Once a release is published, download `qkd-stub.exe` and its SHA-256 checksum from
+Download `qkd-stub.exe` and its SHA-256 checksum from
 [GitHub Releases](https://github.com/LUMII-Syslab/qkd-stub/releases).
-You can skip Rust and Visual Studio Build Tools when using this executable.
-Place it in `target\release\qkd-stub.exe` in a matching source checkout to use
-the commands below, and skip `cargo build`. The scripts, examples, Python and
-OpenSSL are still needed to generate the test credentials shown here.
+In PowerShell, from the directory containing the executable:
+
+```powershell
+.\qkd-stub.exe demo init
+.\qkd-stub.exe --config qkd-demo/a.toml serve
+```
+
+Run `.\qkd-stub.exe --config qkd-demo/b.toml serve` in a second terminal and
+`.\qkd-stub.exe demo verify` in a third. This checks both directions over mTLS.
+Stop with Ctrl-C or Ctrl-Break.
+
+For your own CA, use `.\qkd-stub.exe configure` to generate a local private key
+and CSR. Resume after CA signing, then use `check` and `serve`.
+See [standalone provisioning](setup.md) for scriptable commands, certificate
+installation, trusted client CAs, PSK import, SAE management, and file permissions.
 
 Maintainers: see [Windows signing and releases](windows-signing.md) for Azure
 setup, manual builds and release storage.
 
-## Prerequisites
+## Developer prerequisites (source builds and legacy scripts)
+
+The remaining examples use **Command Prompt (cmd.exe)** from the repository root.
 
 - Rust via [rustup](https://rustup.rs/), using the MSVC toolchain.
 - Visual Studio Build Tools with **Desktop development with C++**, including the
@@ -87,7 +100,8 @@ can handle certificates differently. The Python tests below avoid that dependenc
 scripts\check-windows.bat
 ```
 
-This runs formatting, Clippy, Rust tests, a debug build, setup-script checks, and
+This runs formatting, Clippy, Rust tests (including executable-only provisioning
+and demo verification), a debug build, setup-script checks, and
 all three integration suites. It starts its own temporary endpoints and checks
 TLS 1.2/1.3, client-certificate authorization, encrypted ID derivation, both
 communication directions, restarts and graceful shutdown. It does not use or

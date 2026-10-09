@@ -4,7 +4,9 @@
 x64 MSVC release executable with `Cargo.lock`, signs it using Azure Artifact
 Signing (formerly Trusted Signing), and checks the signature, timestamp and
 expected institute publisher before uploading. It also runs the signed binary's
-`--version` command and calculates its SHA-256 checksum after signing.
+`--version`, `demo init`, and `check` commands and calculates its SHA-256 checksum
+after signing. The release statically links the C runtime so users do not need
+to install the Visual C++ redistributable.
 
 ## One-time configuration
 
@@ -55,8 +57,8 @@ and [GitHub's secret scopes](https://docs.github.com/en/actions/how-tos/write-wo
 - **Manual build:** Actions → Signed Windows executable → Run workflow on `main`.
   Download the `qkd-stub-windows-x64-signed` artifact from the successful run.
   It contains `qkd-stub.exe` and `qkd-stub.exe.sha256` and expires after 30 days.
-- **Versioned release:** push a tag matching `Cargo.toml`, for example `v0.3.0`
-  when the package version is `0.3.0`. The workflow creates a **draft** GitHub
+- **Versioned release:** push a tag matching `Cargo.toml`, for example `v0.4.0`
+  when the package version is `0.4.0`. The workflow creates a **draft** GitHub
   Release with those two files attached. Review the notes and publish it from
   [Releases](https://github.com/LUMII-Syslab/qkd-stub/releases). Mark preview
   versions as prereleases before publishing. Release assets remain until deleted
@@ -75,5 +77,8 @@ Get-FileHash .\qkd-stub.exe -Algorithm SHA256
 Get-Content .\qkd-stub.exe.sha256
 ```
 
-The artifact is the command-line server, not an installer. Test credentials are
-generated separately; no private keys or PSKs are packaged.
+The artifact is a standalone command-line executable, not an installer. It
+includes `configure`, CSR generation, certificate/PSK/SAE provisioning, and
+`demo init` / `demo verify`; no external setup tools are required. Credentials
+are generated locally; no private keys or PSKs are packaged. See
+[standalone provisioning](setup.md).

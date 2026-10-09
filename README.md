@@ -4,18 +4,9 @@
 [![Tests (Windows)](https://github.com/LUMII-Syslab/qkd-stub/actions/workflows/windows.yml/badge.svg?branch=main)](https://github.com/LUMII-Syslab/qkd-stub/actions/workflows/windows.yml)
 
 Two independent HTTPS endpoints simulate the ETSI GS QKD 014 V1.1.1 key delivery
-API without QKD hardware.
-
-**Computational security without QKD.** QKD is not required for this design's
-computational key secrecy: a securely provisioned, uniformly random 256-bit PSK
-and HKDF-HMAC-SHA-512 provide strong computational protection for derived keys,
-under the assumptions in the [security argument](docs/security.md). This claim
-requires secret PSKs, protected endpoints, authenticated TLS, SAE authorization,
-and suitably long output keys (at least 128 bits). It is conditional key secrecy,
-not information-theoretic security or a proof of the whole service. The
-[wiki proof sketch](https://github.com/LUMII-Syslab/qkd-stub/wiki/Computational-Security)
-explains why HKDF pseudorandomness, rather than SHA preimage resistance alone,
-is the relevant assumption.
+API without QKD hardware. Both endpoints derive matching keys from the same
+pre-shared key (PSK), providing computational rather than information-theoretic
+security.
 
 **Main idea.** Give both stubs the same pre-shared key (PSK). Each key ID is a
 UUID that encrypts the authorized SAE pair, a random seed, the key length, and a
@@ -46,7 +37,40 @@ The PSK is mandatory and client-certificate SAE authorization is on by default.
 Anyone with the PSK can reconstruct keys and decrypt their UUID metadata. This is
 a software test stub, not real QKD, and PSK-derived keys do not have forward secrecy.
 
-## Prerequisites
+**Computational security without QKD.** QKD is not required for this design's
+computational key secrecy: a securely provisioned, uniformly random 256-bit PSK
+and HKDF-HMAC-SHA-512 provide strong computational protection for derived keys,
+under the assumptions in the [security argument](docs/security.md). This claim
+requires secret PSKs, protected endpoints, authenticated TLS, SAE authorization,
+and suitably long output keys (at least 128 bits). It is conditional key secrecy,
+not information-theoretic security or a proof of the whole service. The
+[wiki proof sketch](https://github.com/LUMII-Syslab/qkd-stub/wiki/Computational-Security)
+explains why HKDF pseudorandomness, rather than SHA preimage resistance alone,
+is the relevant assumption.
+
+## Standalone setup (Windows executable)
+
+Download the signed `qkd-stub.exe` from
+[GitHub Releases](https://github.com/LUMII-Syslab/qkd-stub/releases).
+No OpenSSL, Python, Rust, or source checkout is needed for setup and demo testing.
+
+```powershell
+.\qkd-stub.exe demo init
+.\qkd-stub.exe --config qkd-demo/a.toml serve
+# In a second terminal:
+.\qkd-stub.exe --config qkd-demo/b.toml serve
+# In a third terminal:
+.\qkd-stub.exe demo verify
+```
+
+For device-style provisioning with your own CA, start with
+`.\qkd-stub.exe configure`. It generates a local private key and CSR, saves the
+configuration, and can resume after your CA signs the request. Use `check` to
+validate setup and `serve` to start the endpoint. Scriptable commands cover TLS
+certificates/trust, PSKs, and SAE mappings. See [standalone provisioning](docs/setup.md)
+for the full workflow and command reference. These commands also work on Linux.
+
+## Prerequisites (building and script-based examples)
 
 Native Windows setup and `.bat` scripts: [Windows quickstart](docs/windows.md).
 GitHub Actions runs the full test suite on Windows and Linux.
@@ -178,6 +202,13 @@ not verified), paste the output into an `[[sae]]` entry:
 ```
 
 ## Command-line interface
+
+Saved configuration and provisioning: `configure`, `serve`, `check`, `tls`,
+`cert`, `psk`, `sae`, and `demo`. Use `--config FILE` to select a configuration
+(default `qkd-stub-data/config.toml`); paths inside it are configuration-relative.
+See [command reference](docs/setup.md#command-reference).
+
+The original flag-only interface remains supported:
 
 ```text
 --listen ADDRESS       Default: 127.0.0.1:8443 (numeric IP:port)

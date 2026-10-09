@@ -1,5 +1,5 @@
 use axum_server::Handle;
-use clap::Parser;
+use clap::{CommandFactory, FromArgMatches, Parser};
 use qkd_stub::{
     Config, app,
     auth::{Registry, certificate_selectors},
@@ -9,12 +9,22 @@ use qkd_stub::{
 use rustls::pki_types::{CertificateDer, pem::PemObject};
 use std::{net::SocketAddr, path::PathBuf, sync::Arc, time::Duration};
 
+mod setup;
+
 #[derive(Parser)]
 #[command(
     version,
-    about = "HTTPS ETSI QKD 014 test stub. PSK-derived keys and certificate-based SAE authorization by default."
+    arg_required_else_help = true,
+    subcommand_negates_reqs = true,
+    about = "HTTPS ETSI QKD 014 test stub. PSK-derived keys and certificate-based SAE authorization by default.",
+    after_help = "Getting started:\n  qkd-stub configure     Guided device-style provisioning\n  qkd-stub demo init     Create a complete local two-endpoint demo\n  qkd-stub <command> --help\n\nUse `serve` with saved configuration, or the original flag-only server invocation."
 )]
 struct Args {
+    #[command(subcommand)]
+    command: Option<setup::Command>,
+    /// Saved configuration (relative file paths are resolved beside this file).
+    #[arg(long, global = true, default_value = "qkd-stub-data/config.toml")]
+    config: PathBuf,
     #[arg(long, default_value = "127.0.0.1:8443")]
     listen: SocketAddr,
     #[arg(long, required_unless_present = "inspect_cert")]
@@ -46,7 +56,35 @@ struct Args {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let args = Args::parse();
+    let matches = Args::command().get_matches();
+    if matches.subcommand().is_some() {
+        for arg in Args::command().get_arguments() {
+            let id = arg.get_id();
+            if id.as_str() != "config"
+                && matches.value_source(id.as_str()) == Some(clap::parser::ValueSource::CommandLine)
+                && matches.subcommand_name() != Some(id.as_str())
+            {
+                return Err(format!("legacy server flag '{}' cannot be combined with a subcommand; use saved configuration", id.as_str()).into());
+            }
+        }
+    }
+    let mut args = Args::from_arg_matches(&matches)?;
+    rustls::crypto::ring::default_provider()
+        .install_default()
+        .map_err(|_| "could not install TLS crypto provider")?;
+    if let Some(command) = args.command.take() {
+        let Some(config) = setup::run(command, &args.config).await? else {
+            return Ok(());
+        };
+        args.listen = config.listen;
+        args.tls_cert = Some(config.tls_cert);
+        args.tls_key = Some(config.tls_key);
+        args.tls_client_ca = Some(config.tls_client_ca);
+        args.sae_map = Some(config.sae_map);
+        args.psk_file = Some(config.psk_file);
+        args.kme_id = config.kme_id;
+        args.peer_kme_id = config.peer_kme_id;
+    }
     if let Some(path) = &args.inspect_cert {
         let cert = CertificateDer::pem_file_iter(path)?
             .next()
@@ -70,9 +108,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             )?)?))
         })
         .transpose()?;
-    rustls::crypto::ring::default_provider()
-        .install_default()
-        .map_err(|_| "could not install TLS crypto provider")?;
     let tls = tls::config(
         args.tls_cert.as_deref().ok_or("--tls-cert is required")?,
         args.tls_key.as_deref().ok_or("--tls-key is required")?,

@@ -1,3 +1,5 @@
 /target/
 /pki/
+/qkd-stub-data/
+/qkd-demo/
 __pycache__/
