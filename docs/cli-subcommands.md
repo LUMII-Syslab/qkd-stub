@@ -1,8 +1,11 @@
 # CLI subcommands (proposal)
 
-Status: **proposed, not implemented.** This documents a plan to fold credential
-setup into the `qkd-stub` binary so that release builds are self-contained on
-Windows and Linux, with no Python or OpenSSL install required.
+Status: **historical proposal, superseded.** The implemented command surface is
+`configure`, `serve`, `check`, `tls`, `cert`, `psk`, `sae` and `demo`; see
+[setup.md](setup.md). The original flag-only server invocation (`--listen`,
+`--tls-cert`, ..., `--no-sae-binding`, `--inspect-cert`) has been removed.
+The text below is the original rationale; its command names (`init`,
+`gen-certs`, `inspect-cert`) were not adopted.
 
 ## Motivation
 
@@ -23,28 +26,19 @@ makes the Windows release a single `.exe`.
 The server itself already has no OpenSSL dependency: it uses `rustls` + `ring`.
 Only the setup scripts need the OpenSSL CLI.
 
-## Current command surface
-
-`qkd-stub` is a single "serve" command with flags, plus one mode flag:
-
-- server flags: `--listen`, `--tls-cert`, `--tls-key`, `--tls-client-ca`,
-  `--sae-map`, `--psk-file`, `--no-sae-binding`, `--sae-id`, `--kme-id`,
-  `--peer-kme-id`
-- `--inspect-cert <FILE>`: prints certificate identity selectors, then exits
-
 ## Proposed command surface
 
-Keep the existing serve flags working, and add setup subcommands:
+Add setup subcommands:
 
 ```
-qkd-stub [serve]        run one endpoint (current flags; no subcommand = serve)
+qkd-stub serve          run one endpoint
 qkd-stub init [DIR]     generate CA, server cert/key, PSK and a sample SAE map
 qkd-stub gen-certs      CA + server certificate (replaces scripts/gen-certs.*)
 qkd-stub gen-psk FILE   exactly 32 raw random bytes (replaces scripts/gen-psk.*)
 qkd-stub gen-client-cert NAME [SAE]
                         client certificate (replaces scripts/gen-client-cert.*)
 qkd-stub inspect-cert FILE
-                        certificate identity selectors (replaces --inspect-cert)
+                        certificate identity selectors (replaced the former --inspect-cert)
 qkd-stub demo           generate creds, run both endpoints, print URLs, block
 ```
 
@@ -69,8 +63,6 @@ the "download and run" path for a release, removing the two-terminal setup.
   crypto provider. `x509-parser` stays for `inspect-cert`.
 - Port the logic in `scripts/pki.py` (currently shelling out to the OpenSSL CLI)
   into a Rust module so the release binary needs no Python or OpenSSL.
-- Preserve backward compatibility: a bare invocation with the serve flags must
-  keep working, so existing docs, `.bat` wrappers and `tests/*.py` do not break.
 - The `.sh` / `.bat` scripts can become thin wrappers that delegate to the
   binary, or stay as fallbacks. `scripts/pki.py` remains the reference for the
   certificate extensions and SAN handling until the Rust port is verified by the
@@ -93,7 +85,6 @@ in [distribution.md](distribution.md).
 
 ## Open questions
 
-- Keep `--inspect-cert` as a hidden alias for `inspect-cert`, or drop it?
 - Should `demo` run both listeners inside one process, or spawn a child per
   endpoint (simpler isolation, harder shutdown)?
 - Is `scripts/pki.py` retired once the Rust generation is covered by tests, or

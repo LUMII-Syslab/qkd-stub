@@ -27,7 +27,7 @@ installation, trusted client CAs, PSK import, SAE management, and file permissio
 Maintainers: see [Windows signing and releases](windows-signing.md) for Azure
 setup, manual builds and release storage.
 
-## Developer prerequisites (source builds and legacy scripts)
+## Developer prerequisites (source builds and tests)
 
 The remaining examples use **Command Prompt (cmd.exe)** from the repository root.
 
@@ -50,49 +50,18 @@ openssl version
 CI uses tools available on GitHub's Windows runner. It verifies builds, scripts
 and behavior, not installation on a blank Windows machine.
 
-## Build and create test credentials
+## Build
 
 ```bat
 cargo build --release --locked
-scripts\gen-certs.bat pki localhost 127.0.0.1 ::1
-scripts\gen-psk.bat pki\shared.psk
-scripts\gen-client-cert.bat pki client-a
-scripts\gen-client-cert.bat pki client-b urn:qkd:sae:B
 ```
 
-The batch files use the same Python implementation as the Linux shell scripts.
-Paths containing spaces must be quoted. Existing credentials are preserved:
-only `gen-certs.bat` accepts `--force` to explicitly replace the server PKI.
-Generate the PSK once and share that same file between both servers. Windows
-files inherit the parent directory's ACLs; keep private keys and the PSK in a
-directory accessible only to the intended account.
-
-## Start the two endpoints
-
-In the first terminal:
-
-```bat
-target\release\qkd-stub.exe --listen 127.0.0.1:8443 ^
-  --tls-cert pki\server.crt --tls-key pki\server.key ^
-  --psk-file pki\shared.psk ^
-  --tls-client-ca pki\ca.crt --sae-map examples\sae-map.toml ^
-  --kme-id KME-A --peer-kme-id KME-B
-```
-
-In a second terminal, from the same repository directory:
-
-```bat
-target\release\qkd-stub.exe --listen 127.0.0.1:8444 ^
-  --tls-cert pki\server.crt --tls-key pki\server.key ^
-  --psk-file pki\shared.psk ^
-  --tls-client-ca pki\ca.crt --sae-map examples\sae-map.toml ^
-  --kme-id KME-B --peer-kme-id KME-A
-```
-
-Stop either server with Ctrl-C or Ctrl-Break. The APIs and certificate mappings
-are the same as on Linux. The PEM client-certificate curl examples in the main
-README require an OpenSSL-compatible curl build; Windows' bundled Schannel curl
-can handle certificates differently. The Python tests below avoid that dependency.
+Run the built executable exactly as the downloaded one, starting with
+`target\release\qkd-stub.exe demo init`. The `scripts\gen-*.bat` helpers create
+OpenSSL-based test credentials for the Python test suite only; they use the same
+Python implementation as the Linux shell scripts. Paths containing spaces must be
+quoted. Existing credentials are preserved: only `gen-certs.bat` accepts
+`--force` to explicitly replace the server PKI.
 
 ## Verify Windows support
 
@@ -107,11 +76,5 @@ TLS 1.2/1.3, client-certificate authorization, encrypted ID derivation, both
 communication directions, restarts and graceful shutdown. It does not use or
 replace your credentials in `pki`.
 
-For two already-running endpoints configured with `--no-sae-binding`, use:
-
-```bat
-scripts\smoke-test.bat pki\ca.crt https://127.0.0.1:8443 https://127.0.0.1:8444
-```
-
-That smoke test deliberately targets the unrestricted test mode. The full
-integration suite also covers the default certificate-authenticated mode.
+To check two already-running demo endpoints, use
+`target\release\qkd-stub.exe demo verify`.

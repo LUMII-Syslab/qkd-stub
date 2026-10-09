@@ -129,9 +129,10 @@ This argument is classical and makes no end-to-end post-quantum security claim.
   Validation responses are not covered by an integrity or metadata-secrecy
   theorem here. SAE checks control retrieval of the target ID; they do not
   turn this format into authenticated encryption.
-- **API access matters.** With `--no-sae-binding`, anyone able to reach the
-  retrieval API can obtain a key for a valid ID without knowing the PSK. This
-  violates the target-key non-disclosure assumption. Incorrect certificate
+- **API access matters.** Whoever the server authorizes can obtain the key for
+  a valid ID without knowing the PSK. That is intended for the ID's SAE pair, but
+  any weakening of SAE authorization violates the target-key non-disclosure
+  assumption. Incorrect certificate
   validation, leaked credentials, or a compromised authorized SAE also bypass
   the cryptographic problem.
 - **Computational, not information-theoretic.** Deterministically expanding a

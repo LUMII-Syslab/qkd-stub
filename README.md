@@ -14,7 +14,7 @@ checksum. Both stubs derive the same key from the PSK and the full UUID, without
 communicating with each other or storing a shared key pool. Without the PSK,
 the UUID reveals neither the embedded SAE pair nor the key.
 
-With SAE binding enabled (the default), retrieval requires a client certificate
+Retrieval requires a client certificate
 mapped to the UUID's receiving SAE, and the request must name its sending SAE.
 An attacker holding a valid certificate for a different SAE cannot retrieve the
 key through the stub using that UUID. The UUID alone is insufficient to calculate
@@ -28,12 +28,12 @@ never contact each other and need no shared database or synchronized clock.
 ![Two clients obtain the same SAE-bound key from independent KME stubs using a shared PSK and UUID.](docs/qkd-client-flow.png)
 
 Both servers use the same 32-byte pre-shared key (PSK) to independently derive
-identical key material from a UUID. By default, client certificates identify each
+identical key material from a UUID. Client certificates identify each
 application as a Secure Application Entity (SAE), and the UUID binds the key to
 the sending and receiving SAEs. Both servers must assign the same numeric codes
 to those SAEs.
 
-The PSK is mandatory and client-certificate SAE authorization is on by default.
+The PSK and client-certificate SAE authorization are mandatory.
 Anyone with the PSK can reconstruct keys and decrypt their UUID metadata. This is
 a software test stub, not real QKD, and PSK-derived keys do not have forward secrecy.
 
@@ -48,97 +48,77 @@ not information-theoretic security or a proof of the whole service. The
 explains why HKDF pseudorandomness, rather than SHA preimage resistance alone,
 is the relevant assumption.
 
-## Standalone setup (Windows executable)
+## Quickstart
 
 Download the signed `qkd-stub.exe` from
-[GitHub Releases](https://github.com/LUMII-Syslab/qkd-stub/releases).
-No OpenSSL, Python, Rust, or source checkout is needed for setup and demo testing.
+[GitHub Releases](https://github.com/LUMII-Syslab/qkd-stub/releases), or build
+with `cargo build --release --locked` (`target/release/qkd-stub`).
+No OpenSSL, Python, or source checkout is needed to run or provision endpoints.
 
-```powershell
-.\qkd-stub.exe demo init
-.\qkd-stub.exe --config qkd-demo/a.toml serve
+```sh
+qkd-stub demo init
+qkd-stub --config qkd-demo/a.toml serve
 # In a second terminal:
-.\qkd-stub.exe --config qkd-demo/b.toml serve
+qkd-stub --config qkd-demo/b.toml serve
 # In a third terminal:
-.\qkd-stub.exe demo verify
+qkd-stub demo verify
 ```
 
-For device-style provisioning with your own CA, start with
-`.\qkd-stub.exe configure`. It generates a local private key and CSR, saves the
-configuration, and can resume after your CA signs the request. Use `check` to
-validate setup and `serve` to start the endpoint. Scriptable commands cover TLS
-certificates/trust, PSKs, and SAE mappings. See [standalone provisioning](docs/setup.md)
-for the full workflow and command reference. These commands also work on Linux.
+On Windows use `.\qkd-stub.exe`. `demo init` creates a `qkd-demo` directory in the
+**current working directory** (`--dir` changes it; an existing directory is refused)
+with a test CA, two server configurations (ports 8443 and 8444), a shared PSK, and
+client certificates for SAEs `A` and `B`. It holds private keys, so run it from a
+private location. `demo verify` retrieves matching keys in both directions over
+mTLS.
 
-## Prerequisites (building and script-based examples)
+A requests a key for B at the first server, then B retrieves it at the second:
 
-Native Windows setup and `.bat` scripts: [Windows quickstart](docs/windows.md).
-GitHub Actions runs the full test suite on Windows and Linux.
-The [signed Windows build workflow](docs/windows-signing.md) produces an x64
+```sh
+curl --fail --cacert qkd-demo/ca.pem \
+  --cert qkd-demo/client-a.pem --key qkd-demo/client-a.key.pem \
+  'https://localhost:8443/api/v1/keys/B/enc_keys' > issued.json
+KEY_ID=$(python3 -c 'import json; print(json.load(open("issued.json"))["keys"][0]["key_ID"])')
+curl --fail --cacert qkd-demo/ca.pem \
+  --cert qkd-demo/client-b.pem --key qkd-demo/client-b.key.pem \
+  "https://localhost:8444/api/v1/keys/A/dec_keys?key_ID=$KEY_ID"
+```
+
+Stop with Ctrl-C or SIGTERM (Ctrl-Break on Windows). Windows' bundled Schannel
+curl may not accept PEM client certificates; use `demo verify` there.
+
+For device-style provisioning with your own CA, start with `qkd-stub configure`.
+It generates a local private key and CSR, saves the configuration, and can resume
+after your CA signs the request. Use `check` to validate setup and `serve` to start
+the endpoint. Scriptable commands cover TLS certificates/trust, PSKs, and SAE
+mappings. See [standalone provisioning](docs/setup.md) for the full workflow and
+command reference.
+
+Separate machines: copy the same PSK and the same SAE code assignments to both
+machines. Each server may use its own TLS certificate and client CA. Details:
+[Deployment notes](https://github.com/LUMII-Syslab/qkd-stub/wiki/Deployment-Notes).
+
+## Building and testing from source
+
+Windows: [Windows quickstart](docs/windows.md). GitHub Actions runs the full test
+suite on Windows and Linux. The
+[signed Windows build workflow](docs/windows-signing.md) produces an x64
 `qkd-stub.exe`, with tagged builds stored in GitHub Releases after publication.
 
-On Linux: Rust 1.89+, a C compiler, OpenSSL 3, Python 3.11+, and curl for the
-examples below. On Ubuntu 24.04 (verified on a fresh container):
+On Linux: Rust 1.89+, a C compiler, and, for the integration tests, OpenSSL 3,
+Python 3.11+, and curl. On Ubuntu 24.04 (verified on a fresh container):
 
 ```sh
 sudo apt-get update
 sudo apt-get install -y --no-install-recommends \
     ca-certificates gcc libc6-dev curl openssl python3 rustc-1.91 cargo-1.91
 export PATH=/usr/lib/rust-1.91/bin:$PATH
+cargo build --locked
+cargo test --locked
+for t in setup https mtls psk; do python3 tests/$t.py; done
 ```
 
 Other versions, rustup and the version notes: [Ubuntu prerequisites](https://github.com/LUMII-Syslab/qkd-stub/wiki/Ubuntu-Prerequisites).
-
-## Build and quickstart
-
-Run from this directory:
-
-```sh
-cargo build --release --locked
-./scripts/gen-certs.sh pki localhost 127.0.0.1 ::1
-./scripts/gen-psk.sh pki/shared.psk
-./scripts/gen-client-cert.sh pki client-a
-./scripts/gen-client-cert.sh pki client-b urn:qkd:sae:B
-```
-
-Generate the PSK **once**: exactly 32 raw bytes, not a password, hex or Base64.
-The command refuses to overwrite an existing file. Keep `pki/shared.psk` readable
-only by the server account (`chmod 600`).
-
-Start each server in its own terminal:
-
-```sh
-./target/release/qkd-stub --listen 127.0.0.1:8443 \
-  --tls-cert pki/server.crt --tls-key pki/server.key \
-  --psk-file pki/shared.psk \
-  --tls-client-ca pki/ca.crt --sae-map examples/sae-map.toml \
-  --kme-id KME-A --peer-kme-id KME-B
-
-./target/release/qkd-stub --listen 127.0.0.1:8444 \
-  --tls-cert pki/server.crt --tls-key pki/server.key \
-  --psk-file pki/shared.psk \
-  --tls-client-ca pki/ca.crt --sae-map examples/sae-map.toml \
-  --kme-id KME-B --peer-kme-id KME-A
-```
-
-A requests a key for B, then B retrieves it at the other server:
-
-```sh
-curl --fail --cacert pki/ca.crt --cert pki/client-a.crt --key pki/client-a.key \
-  'https://127.0.0.1:8443/api/v1/keys/B/enc_keys' > issued.json
-KEY_ID=$(python3 -c 'import json; print(json.load(open("issued.json"))["keys"][0]["key_ID"])')
-curl --fail --cacert pki/ca.crt --cert pki/client-b.crt --key pki/client-b.key \
-  "https://127.0.0.1:8444/api/v1/keys/A/dec_keys?key_ID=$KEY_ID"
-```
-
-Stop with Ctrl-C or SIGTERM. `gen-certs.sh --force` replaces existing server PKI.
-
-### Separate machines and unrestricted mode
-
-Copy the same PSK and the same SAE code assignments to both machines. Each server
-may use its own TLS certificate and client CA. `--no-sae-binding` disables client
-authentication and SAE checks (test only); the PSK is still required. Details:
-[Deployment notes](https://github.com/LUMII-Syslab/qkd-stub/wiki/Deployment-Notes).
+The Python tests use `scripts/gen-*.sh` to create OpenSSL test credentials.
 
 ## Key IDs and derivation
 
@@ -163,12 +143,13 @@ and `qkd-key-derivation.png` images describe the previous format.
 
 ## Certificate-based SAE authorization
 
-Both servers need `--tls-client-ca` and `--sae-map`. A client must present a
-certificate signed by that CA. Its subject DN or a SAN is matched against the
+Both configurations need a trusted client CA bundle (`tls trust add`) and an SAE
+registry (`sae add`). A client must present a certificate signed by that CA. Its subject DN or a SAN is matched against the
 registry. Invalid certificates fail the TLS handshake; unmapped or ambiguous ones
 get HTTP 401.
 
-The example registry is in [`examples/sae-map.toml`](examples/sae-map.toml):
+The registry is a TOML file (`sae_map` in the configuration). An example is in
+[`examples/sae-map.toml`](examples/sae-map.toml):
 
 ```toml
 [[sae]]
@@ -195,10 +176,11 @@ UUID's slave and the URL's SAE its master, otherwise HTTP 401 for the whole batc
 [SAE authorization details](https://github.com/LUMII-Syslab/qkd-stub/wiki/SAE-Authorization).
 
 To get exact selector values from a client certificate (metadata only, trust is
-not verified), paste the output into an `[[sae]]` entry:
+not verified), use `cert inspect`; `sae add --cert FILE --selector N` records one,
+or paste a selector into an `[[sae]]` entry:
 
 ```sh
-./target/release/qkd-stub --inspect-cert path/to/client.crt
+qkd-stub cert inspect path/to/client.crt
 ```
 
 ## Command-line interface
@@ -208,48 +190,30 @@ Saved configuration and provisioning: `configure`, `serve`, `check`, `tls`,
 (default `qkd-stub-data/config.toml`); paths inside it are configuration-relative.
 See [command reference](docs/setup.md#command-reference).
 
-The original flag-only interface remains supported:
-
-```text
---listen ADDRESS       Default: 127.0.0.1:8443 (numeric IP:port)
---tls-cert FILE        Required server PEM certificate/chain
---tls-key FILE         Required unencrypted server PEM private key
---psk-file FILE        Required: exactly 32 raw bytes
---tls-client-ca FILE   Required unless --no-sae-binding: client CA PEM bundle
---sae-map FILE         Required unless --no-sae-binding: SAE registry TOML
---no-sae-binding       Explicitly disable client authentication/SAE checks
---sae-id ID            Unrestricted-mode status fallback; default sae-local
---kme-id ID            Default: kme-local
---peer-kme-id ID       Default: kme-peer
---inspect-cert FILE   Print client certificate selectors and exit
---help / --version
-```
-
 HTTPS only (TLS 1.2 and 1.3). Routes and JSON follow ETSI GS QKD 014 V1.1.1 but
 the stub is not fully compliant.
 
 ## API
 
-All paths begin with `/api/v1/keys/{SAE_ID}`. By default, all calls require a
+All paths begin with `/api/v1/keys/{SAE_ID}`. All calls require a
 mapped client certificate and SAE IDs in the URL must be in the registry.
 
 | Method | Suffix | Parameters |
 | --- | --- | --- |
-| GET | `/status` | Peer slave SAE in the path; master from certificate in SAE mode, otherwise optional `Request-SAE-ID` header |
+| GET | `/status` | Peer slave SAE in the path; master from the client certificate (`Request-SAE-ID` is ignored) |
 | GET | `/enc_keys` | Optional `number` and `size` query parameters |
 | POST | `/enc_keys` | JSON object with optional `number`, `size`, extension fields |
 | GET | `/dec_keys` | Required `key_ID` query parameter |
 | POST | `/dec_keys` | JSON `{"key_IDs":[{"key_ID":"UUID"}, ...]}` |
 
-Examples with `--no-sae-binding` (default mode: see the quickstart):
+Examples, using the `demo init` credentials (A is `client-a`):
 
 ```sh
-curl --cacert pki/ca.crt 'https://127.0.0.1:8443/api/v1/keys/B/status'
-curl --cacert pki/ca.crt 'https://127.0.0.1:8443/api/v1/keys/B/enc_keys?number=2&size=256'
-curl --cacert pki/ca.crt -H 'Content-Type: application/json' \
-  -d '{"number":2,"size":512}' 'https://127.0.0.1:8443/api/v1/keys/B/enc_keys'
-curl --cacert pki/ca.crt \
-  "https://127.0.0.1:8444/api/v1/keys/A/dec_keys?key_ID=$KEY_ID"
+A="--cacert qkd-demo/ca.pem --cert qkd-demo/client-a.pem --key qkd-demo/client-a.key.pem"
+curl $A 'https://localhost:8443/api/v1/keys/B/status'
+curl $A 'https://localhost:8443/api/v1/keys/B/enc_keys?number=2&size=256'
+curl $A -H 'Content-Type: application/json' \
+  -d '{"number":2,"size":512}' 'https://localhost:8443/api/v1/keys/B/enc_keys'
 ```
 
 Parameters, defaults, response format, errors and limits:

@@ -21,9 +21,10 @@ Two-byte integers are unsigned big-endian; offsets are zero-based.
 | 6–14 | 72 OS-random bits, with no reserved version/variant bits |
 | 15 | One-byte keyed checksum |
 
-Unbound issuance uses zero for both SAE codes. Bound issuance requires nonzero
-codes. Retrieval with binding enabled checks the decrypted codes against the
-certificate's slave SAE and the URL's master SAE.
+The server binary always issues with the nonzero codes of the authenticated
+SAE pair and checks the decrypted codes on retrieval against the certificate's
+slave SAE and the URL's master SAE. Only the library's registry-less mode (used
+by Rust API tests, not reachable from the CLI) issues zero for both SAE codes.
 
 ## Exact derivation
 

@@ -5,7 +5,7 @@ from pathlib import Path
 import subprocess
 import tempfile
 
-from https import script
+from common import script
 
 
 def run(name, *args, ok=True):

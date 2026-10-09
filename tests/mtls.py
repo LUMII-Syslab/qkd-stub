@@ -12,7 +12,8 @@ import tomllib
 import urllib.error
 import urllib.request
 from pathlib import Path
-from https import ROOT, BINARY, PROCESS_FLAGS, free_port, script, stop
+import common
+from common import ROOT, BINARY, free_port, script, stop
 
 
 def openssl(*args):
@@ -52,20 +53,7 @@ def fetch(port, path, ctx, body=None, header=None):
 
 
 def start(port, pki, mapping, log, ctx, psk):
-    proc = subprocess.Popen([str(BINARY), '--listen', f'127.0.0.1:{port}',
-                             '--tls-cert', str(pki / 'server.crt'), '--tls-key', str(pki / 'server.key'),
-                             '--tls-client-ca', str(pki / 'ca.crt'), '--sae-map', str(mapping)]
-                            + ['--psk-file', str(psk)], stdout=log, stderr=log, creationflags=PROCESS_FLAGS)
-    for _ in range(100):
-        if proc.poll() is not None:
-            raise AssertionError(f'Server exited: {proc.returncode}')
-        try:
-            assert fetch(port, 'B/status', ctx)[0] == 200
-            return proc
-        except (OSError, urllib.error.URLError):
-            time.sleep(.05)
-    stop(proc)
-    raise AssertionError('Server failed to start')
+    return common.start(port, pki, mapping, log, ctx, psk, fetch)
 
 
 def main():
@@ -97,8 +85,10 @@ def main():
         for name, expected in [('client-a', {'subject_dn':'CN=client-a'}),
                                ('client-b', {'san_uri':'urn:qkd:sae:B'}),
                                ('escaped', {'subject_dn':r'CN=client-a\,OU\=Other,O=Example'})]:
-            result = subprocess.run([str(BINARY), '--inspect-cert', str(pki / f'{name}.crt')], check=True, capture_output=True)
-            assert expected in tomllib.loads(result.stdout.decode())['identities'], result.stdout
+            result = subprocess.run([str(BINARY), 'cert', 'inspect', str(pki / f'{name}.crt')], check=True, capture_output=True)
+            selectors = [tomllib.loads('s = ' + line.split(': ', 1)[1])['s']
+                         for line in result.stdout.decode().splitlines() if line.startswith('  Selector ')]
+            assert expected in selectors, result.stdout
         map_path = root / 'saes.toml'
         map_path.write_text(mapping)
         contexts = {name: context(pki, cert) for name, cert in [('A','client-a'), ('B','client-b'), ('C','client-c'), ('D','client-d'), ('E','dns'), ('F','ip'), ('G','email')]}
@@ -168,11 +158,7 @@ def main():
             finally:
                 for proc in procs:
                     stop(proc)
-        for args in [['--tls-client-ca',str(pki/'ca.crt')], ['--sae-map',str(map_path)]]:
-            command = [str(BINARY), '--tls-cert', str(pki/'server.crt'), '--tls-key', str(pki/'server.key'), '--psk-file', str(psk), *args]
-            result = subprocess.run(command, capture_output=True, timeout=5)
-            assert result.returncode == 2, result.stderr
-        print('PASS: opt-in flags must be supplied together; client certificate overwrite protection')
+        print('PASS: client certificate overwrite protection')
 
 
 if __name__ == '__main__':

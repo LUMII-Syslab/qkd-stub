@@ -13,27 +13,21 @@ apt-get install -y -qq --no-install-recommends \
     ca-certificates gcc libc6-dev curl openssl python3 rustc-1.91 cargo-1.91 >/dev/null
 export PATH=/usr/lib/rust-1.91/bin:$PATH
 mkdir /w
-(cd /src && tar --exclude=./target --exclude=./pki -cf - .) | tar -xf - -C /w
+(cd /src && tar --exclude=./target --exclude=./qkd-demo -cf - .) | tar -xf - -C /w
 cd /w
 cargo build --release --locked
 cargo build --locked
-./scripts/gen-certs.sh pki localhost 127.0.0.1 ::1
-./scripts/gen-psk.sh pki/shared.psk
-./scripts/gen-client-cert.sh pki client-a
-./scripts/gen-client-cert.sh pki client-b urn:qkd:sae:B
-for p in "8443 KME-A KME-B" "8444 KME-B KME-A"; do
-    set -- $p
-    ./target/release/qkd-stub --listen 127.0.0.1:$1 \
-        --tls-cert pki/server.crt --tls-key pki/server.key --psk-file pki/shared.psk \
-        --tls-client-ca pki/ca.crt --sae-map examples/sae-map.toml \
-        --kme-id $2 --peer-kme-id $3 &
+./target/release/qkd-stub demo init
+for n in a b; do
+    ./target/release/qkd-stub --config qkd-demo/$n.toml serve &
 done
 sleep 1
-curl --fail --cacert pki/ca.crt --cert pki/client-a.crt --key pki/client-a.key \
-    https://127.0.0.1:8443/api/v1/keys/B/enc_keys > issued.json
+curl --fail --cacert qkd-demo/ca.pem --cert qkd-demo/client-a.pem --key qkd-demo/client-a.key.pem \
+    https://localhost:8443/api/v1/keys/B/enc_keys > issued.json
 id=$(python3 -c "import json; print(json.load(open(\"issued.json\"))[\"keys\"][0][\"key_ID\"])")
-curl --fail --cacert pki/ca.crt --cert pki/client-b.crt --key pki/client-b.key \
-    "https://127.0.0.1:8444/api/v1/keys/A/dec_keys?key_ID=$id"
+curl --fail --cacert qkd-demo/ca.pem --cert qkd-demo/client-b.pem --key qkd-demo/client-b.key.pem \
+    "https://localhost:8444/api/v1/keys/A/dec_keys?key_ID=$id"
+./target/release/qkd-stub demo verify
 kill %1 %2
 cargo test --release --locked
 python3 tests/setup.py

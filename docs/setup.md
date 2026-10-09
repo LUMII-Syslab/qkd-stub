@@ -30,7 +30,8 @@ Verification requests and retrieves matching keys in both directions over mTLS.
 It prints success/failure without printing key material. No curl is needed.
 Stop servers with Ctrl-C (or Ctrl-Break on Windows).
 
-`demo init --dir DIRECTORY` creates two configurations on localhost ports 8443
+`demo init --dir DIRECTORY` (default `qkd-demo` in the current working
+directory) creates two configurations on localhost ports 8443
 and 8444, separate server keys/certificates, client A/B keys/certificates,
 `ca.pem`, `shared.psk`, and the shared SAE registry. Existing directories are
 refused. Certificates last one year. The test CA's private key is not retained;
@@ -158,6 +159,6 @@ files use 0600. Existing directories retain their permissions; choose a private
 location for credentials. An endpoint running under another service account
 needs appropriate access provisioned by its administrator.
 
-The original flag-only server invocation and `--inspect-cert FILE` remain
-supported. Do not mix legacy server flags with subcommands. The explicit
-`--no-sae-binding` test mode remains available through the flag-only invocation.
+The former flag-only server invocation (`--listen`, `--tls-cert`, ...,
+`--no-sae-binding`, `--inspect-cert`) has been removed. All configuration comes
+from the saved configuration; use `cert inspect FILE` instead of `--inspect-cert`.

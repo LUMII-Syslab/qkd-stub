@@ -35,7 +35,6 @@ fn csr_provisioning_is_resumable_and_preserves_secrets() {
     let config = root.join("qkd-stub-data");
     invoke(root, &["configure", "--non-interactive"], true);
     invoke(root, &["configure"], false);
-    invoke(root, &["--listen", "127.0.0.1:9999", "check"], false);
     invoke(root, &["check"], false);
     invoke(
         root,

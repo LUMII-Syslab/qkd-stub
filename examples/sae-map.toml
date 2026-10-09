@@ -6,7 +6,7 @@
 #
 # `identities` are alternative certificate selectors. Supported fields:
 # subject_dn, san_dns, san_uri, san_email, san_ip. Get exact values with
-#   qkd-stub --inspect-cert client.crt
+#   qkd-stub cert inspect client.crt
 # Remote-only SAEs may omit `identities`.
 
 [[sae]]
