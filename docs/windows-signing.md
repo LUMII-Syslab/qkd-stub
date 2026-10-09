@@ -61,13 +61,15 @@ and [GitHub's secret scopes](https://docs.github.com/en/actions/how-tos/write-wo
   when the package version is `0.4.0`. The workflow creates a **draft** GitHub
   Release with those two files attached. Review the notes and publish it from
   [Releases](https://github.com/LUMII-Syslab/qkd-stub/releases). Mark preview
-  versions as prereleases before publishing. Release assets remain until deleted
-  and provide public downloads for this public repository.
+  versions as prereleases before publishing. The [Linux workflow](linux-release.md)
+  adds its assets to the same draft, whichever workflow finishes first. Release
+  assets remain until deleted and provide public downloads for this public
+  repository.
 
 Signing is limited to this repository's `main` branch and `v*` tags and is never
 triggered by pull requests. A failed login, signature check or timestamp check
 prevents uploads; there is no unsigned fallback. A rerun for a tag with an existing
-release fails at release creation rather than replacing its assets.
+release fails at asset upload rather than replacing its assets.
 
 Verify a downloaded executable in PowerShell:
 

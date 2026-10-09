@@ -50,7 +50,9 @@ is the relevant assumption.
 
 ## Quickstart
 
-Download the signed `qkd-stub.exe` from
+Download the signed `qkd-stub.exe` (Windows) or the static
+`qkd-stub-x86_64-linux.tar.gz` (Linux; verification in
+[Linux releases](docs/linux-release.md)) from
 [GitHub Releases](https://github.com/LUMII-Syslab/qkd-stub/releases), or build
 with `cargo build --release --locked` (`target/release/qkd-stub`).
 No OpenSSL, Python, or source checkout is needed to run or provision endpoints.

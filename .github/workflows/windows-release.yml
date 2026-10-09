@@ -109,11 +109,15 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
-      - name: Create draft GitHub Release
+      - name: Create draft GitHub Release or add assets
         if: github.ref_type == 'tag'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           $notes = "``demo init`` creates a ``qkd-demo`` directory in the current working directory (change it with ``--dir``) and refuses to run if it exists. It holds test credentials, including private keys and the shared PSK. ``configure`` creates ``qkd-stub-data`` in the working directory."
+          # The Linux workflow may have created the draft first; then only upload.
           gh release create $env:GITHUB_REF_NAME out/qkd-stub.exe out/qkd-stub.exe.sha256 --verify-tag --draft --title "qkd-stub $env:GITHUB_REF_NAME" --notes $notes --generate-notes
-          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          if ($LASTEXITCODE) {
+            gh release upload $env:GITHUB_REF_NAME out/qkd-stub.exe out/qkd-stub.exe.sha256
+            if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          }
