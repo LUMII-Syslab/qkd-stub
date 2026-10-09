@@ -145,8 +145,13 @@ jobs:
         run: |
           $notes = "``qkd-stub.exe`` is the command-line tool; ``qkd-stub-gui.exe`` is a dashboard that serves a configuration and shows client activity. ``demo init`` creates a ``qkd-demo`` directory in the current working directory (change it with ``--dir``) and refuses to run if it exists. It holds test credentials, including private keys and the shared PSK. ``configure`` creates ``qkd-stub-data`` in the working directory."
           # The Linux workflow may have created the draft first; then only upload.
-          gh release create $env:GITHUB_REF_NAME out/qkd-stub.exe out/qkd-stub.exe.sha256 out/qkd-stub-gui.exe out/qkd-stub-gui.exe.sha256 --verify-tag --draft --title "qkd-stub $env:GITHUB_REF_NAME" --notes $notes --generate-notes
-          if ($LASTEXITCODE) {
-            gh release upload $env:GITHUB_REF_NAME out/qkd-stub.exe out/qkd-stub.exe.sha256 out/qkd-stub-gui.exe out/qkd-stub-gui.exe.sha256
-            if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          # `gh release create` does not fail for an existing draft (drafts have no tag yet),
+          # so look it up first.
+          $assets = 'out/qkd-stub.exe', 'out/qkd-stub.exe.sha256', 'out/qkd-stub-gui.exe', 'out/qkd-stub-gui.exe.sha256'
+          gh release view $env:GITHUB_REF_NAME *> $null
+          if ($LASTEXITCODE -eq 0) {
+            gh release upload $env:GITHUB_REF_NAME @assets
+          } else {
+            gh release create $env:GITHUB_REF_NAME @assets --verify-tag --draft --title "qkd-stub $env:GITHUB_REF_NAME" --notes $notes --generate-notes
           }
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
