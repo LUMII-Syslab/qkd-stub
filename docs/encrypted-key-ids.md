@@ -5,6 +5,10 @@ is a single AES-256 ciphertext block in lowercase, hyphenated UUID notation.
 Uppercase input is accepted. Its version/variant fields match UUIDv4, but its
 collision budget is smaller than an ordinary UUIDv4 generator's 122 random bits.
 
+For the computational key-secrecy claim, assumptions and conditional proof
+sketch, see [Computational security without QKD](security.md). SHA preimage
+resistance alone is not the security argument for this HKDF construction.
+
 ## Plaintext layout
 
 Two-byte integers are unsigned big-endian; offsets are zero-based.

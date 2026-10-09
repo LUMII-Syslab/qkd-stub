@@ -6,6 +6,17 @@
 Two independent HTTPS endpoints simulate the ETSI GS QKD 014 V1.1.1 key delivery
 API without QKD hardware.
 
+**Computational security without QKD.** QKD is not required for this design's
+computational key secrecy: a securely provisioned, uniformly random 256-bit PSK
+and HKDF-HMAC-SHA-512 provide strong computational protection for derived keys,
+under the assumptions in the [security argument](docs/security.md). This claim
+requires secret PSKs, protected endpoints, authenticated TLS, SAE authorization,
+and suitably long output keys (at least 128 bits). It is conditional key secrecy,
+not information-theoretic security or a proof of the whole service. The
+[wiki proof sketch](https://github.com/LUMII-Syslab/qkd-stub/wiki/Computational-Security)
+explains why HKDF pseudorandomness, rather than SHA preimage resistance alone,
+is the relevant assumption.
+
 **Main idea.** Give both stubs the same pre-shared key (PSK). Each key ID is a
 UUID that encrypts the authorized SAE pair, a random seed, the key length, and a
 checksum. Both stubs derive the same key from the PSK and the full UUID, without
