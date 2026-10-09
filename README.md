@@ -3,8 +3,9 @@
 [![Tests (Ubuntu)](https://github.com/LUMII-Syslab/qkd-stub/actions/workflows/ubuntu.yml/badge.svg?branch=main)](https://github.com/LUMII-Syslab/qkd-stub/actions/workflows/ubuntu.yml)
 [![Tests (Windows)](https://github.com/LUMII-Syslab/qkd-stub/actions/workflows/windows.yml/badge.svg?branch=main)](https://github.com/LUMII-Syslab/qkd-stub/actions/workflows/windows.yml)
 
-Two independent HTTPS endpoints simulate the ETSI GS QKD 014 V1.1.1 key delivery
-API without QKD hardware. Both endpoints derive matching keys from the same
+Two independent HTTPS endpoints simulate the
+[ETSI GS QKD 014 V1.1.1](https://www.etsi.org/deliver/etsi_gs/QKD/001_099/014/01.01.01_60/gs_qkd014v010101p.pdf)
+key delivery API without QKD hardware. Both endpoints derive matching keys from the same
 pre-shared key (PSK), providing computational rather than information-theoretic
 security.
 
@@ -16,9 +17,6 @@ security.
 - [Building and testing from source](#building-and-testing-from-source)
 - [Key IDs and derivation](#key-ids-and-derivation)
 - [Certificate-based SAE authorization](#certificate-based-sae-authorization)
-- [Command-line interface](#command-line-interface)
-- [API](#api)
-- [More](#more)
 
 **Main idea.** Give both stubs the same pre-shared key (PSK). Each key ID is a
 UUID that encrypts the authorized SAE pair, a random seed, the key length, and a
@@ -223,19 +221,15 @@ or paste a selector into an `[[sae]]` entry:
 qkd-stub cert inspect path/to/client.crt
 ```
 
-## Command-line interface
+## Reference
 
-Saved configuration and provisioning: `configure`, `serve`, `check`, `tls`,
+**Command line.** Saved configuration and provisioning: `configure`, `serve`, `check`, `tls`,
 `cert`, `psk`, `sae`, and `demo`. Use `--config FILE` to select a configuration
 (default `qkd-stub-data/config.toml`); paths inside it are configuration-relative.
 See [command reference](docs/setup.md#command-reference).
 
-HTTPS only (TLS 1.2 and 1.3). Routes and JSON follow ETSI GS QKD 014 V1.1.1 but
-the stub is not fully compliant.
-
-## API
-
-All paths begin with `/api/v1/keys/{SAE_ID}`. All calls require a
+**HTTP API.** HTTPS only (TLS 1.2 and 1.3). Routes and JSON follow ETSI GS QKD 014 V1.1.1 but
+the stub is not fully compliant. All paths begin with `/api/v1/keys/{SAE_ID}`. All calls require a
 mapped client certificate and SAE IDs in the URL must be in the registry.
 
 | Method | Suffix | Parameters |
@@ -258,7 +252,5 @@ curl $A -H 'Content-Type: application/json' \
 
 Parameters, defaults, response format, errors and limits:
 [API details](https://github.com/LUMII-Syslab/qkd-stub/wiki/API-Details).
-
-## More
-
-[Wiki](https://github.com/LUMII-Syslab/qkd-stub/wiki/Home): key derivation, SAE authorization rules, deployment notes, testing.
+The [wiki](https://github.com/LUMII-Syslab/qkd-stub/wiki/Home) also covers key derivation, SAE
+authorization rules, deployment notes, and testing.
