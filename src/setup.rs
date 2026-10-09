@@ -1,10 +1,10 @@
 //! Self-contained provisioning. No external cryptographic programs are invoked.
-use clap::{Args, Subcommand};
-use qkd_stub::{
+use crate::{
     auth::{Registry, Selector, certificate_selectors},
     keys::Psk,
     tls,
 };
+use clap::{Args, Subcommand};
 use rcgen::{
     BasicConstraints, CertificateParams, DnType, ExtendedKeyUsagePurpose, IsCa, KeyPair,
     KeyUsagePurpose,
@@ -189,7 +189,7 @@ fn parent(path: &Path) -> &Path {
 }
 
 impl Settings {
-    fn load(path: &Path) -> Result<Self> {
+    pub fn load(path: &Path) -> Result<Self> {
         let config: Self = toml::from_str(&fs::read_to_string(path).map_err(|e| {
             format!(
                 "cannot read {}: {e}; run `qkd-stub configure` first",
@@ -202,7 +202,7 @@ impl Settings {
         Ok(config)
     }
 
-    fn resolved(mut self, path: &Path) -> Self {
+    pub fn resolved(mut self, path: &Path) -> Self {
         let base = parent(path);
         for file in [
             &mut self.tls_cert,
@@ -324,22 +324,64 @@ fn pem_bundle(certificates: &[CertificateDer<'_>]) -> String {
     out
 }
 
+/// Displayable facts about one certificate. Contains no private material.
+pub struct CertInfo {
+    pub subject: String,
+    pub issuer: String,
+    pub not_before: String,
+    pub not_after: String,
+    pub sha256: String,
+    /// Identity selectors as inline TOML, in the order `sae add --selector` numbers them.
+    pub selectors: Vec<String>,
+}
+
+/// Describe every certificate in a PEM file.
+pub fn cert_info(path: &Path) -> Result<Vec<CertInfo>> {
+    certs(path)?
+        .iter()
+        .map(|der| {
+            let (_, cert) = X509Certificate::from_der(der)?;
+            Ok(CertInfo {
+                subject: cert.subject().to_string(),
+                issuer: cert.issuer().to_string(),
+                not_before: cert.validity().not_before.to_string(),
+                not_after: cert.validity().not_after.to_string(),
+                sha256: fingerprint(der),
+                selectors: certificate_selectors(der)?
+                    .iter()
+                    .map(|s| s.to_toml_inline())
+                    .collect::<std::result::Result<_, _>>()?,
+            })
+        })
+        .collect()
+}
+
 fn inspect(path: &Path) -> Result<()> {
-    for (index, der) in certs(path)?.iter().enumerate() {
-        let (_, cert) = X509Certificate::from_der(der)?;
-        println!("Certificate {}: {}", index + 1, cert.subject());
+    for (index, info) in cert_info(path)?.iter().enumerate() {
+        println!("Certificate {}: {}", index + 1, info.subject);
         println!(
             "  Issuer: {}\n  Valid: {} to {}\n  SHA-256: {}",
-            cert.issuer(),
-            cert.validity().not_before,
-            cert.validity().not_after,
-            fingerprint(der)
+            info.issuer, info.not_before, info.not_after, info.sha256
         );
-        for (i, selector) in certificate_selectors(der)?.iter().enumerate() {
-            println!("  Selector {}: {}", i + 1, selector.to_toml_inline()?);
+        for (i, selector) in info.selectors.iter().enumerate() {
+            println!("  Selector {}: {}", i + 1, selector);
         }
     }
     Ok(())
+}
+
+/// Trusted client CAs, or an empty list when no bundle is provisioned.
+pub fn trusted_cas(config: &Settings) -> Result<Vec<CertInfo>> {
+    if config.tls_client_ca.exists() {
+        cert_info(&config.tls_client_ca)
+    } else {
+        Ok(Vec::new())
+    }
+}
+
+/// The server certificate chain, leaf first.
+pub fn server_certificates(config: &Settings) -> Result<Vec<CertInfo>> {
+    cert_info(&config.tls_cert)
 }
 
 fn params(names: Vec<String>, common_name: &str, client: bool) -> Result<CertificateParams> {
@@ -540,6 +582,36 @@ struct Sae {
     identities: Vec<Selector>,
 }
 
+/// A configured SAE for display.
+pub struct SaeEntry {
+    pub id: String,
+    pub code: u16,
+    /// Certificate identity selectors as inline TOML.
+    pub identities: Vec<String>,
+}
+
+/// SAEs from the configured registry, or an empty list when none is provisioned.
+pub fn sae_entries(config: &Settings) -> Result<Vec<SaeEntry>> {
+    if !config.sae_map.exists() {
+        return Ok(Vec::new());
+    }
+    let file: SaeFile = toml::from_str(&fs::read_to_string(&config.sae_map)?)?;
+    file.sae
+        .into_iter()
+        .map(|sae| {
+            Ok(SaeEntry {
+                id: sae.id,
+                code: sae.code,
+                identities: sae
+                    .identities
+                    .iter()
+                    .map(|s| s.to_toml_inline())
+                    .collect::<std::result::Result<_, _>>()?,
+            })
+        })
+        .collect()
+}
+
 fn sae(config: &Settings, command: SaeCommand) -> Result<()> {
     let path = &config.sae_map;
     let mut registry: SaeFile = if path.exists() {
@@ -604,47 +676,67 @@ fn sae(config: &Settings, command: SaeCommand) -> Result<()> {
     Ok(())
 }
 
+/// One local provisioning check.
+pub struct CheckItem {
+    pub name: &'static str,
+    pub result: std::result::Result<(), String>,
+}
+
+/// Run the local provisioning checks without printing.
+pub fn check_report(config: &Settings) -> Vec<CheckItem> {
+    fn item(name: &'static str, result: Result<()>) -> CheckItem {
+        CheckItem {
+            name,
+            result: result.map_err(|e| e.to_string()),
+        }
+    }
+    vec![
+        item(
+            "shared PSK",
+            (|| {
+                Psk::new(&fs::read(&config.psk_file)?)?;
+                Ok(())
+            })(),
+        ),
+        item(
+            "server certificate and private key",
+            (|| validate_server(&certs(&config.tls_cert)?, &config.tls_key))(),
+        ),
+        item(
+            "trusted client CAs",
+            (|| {
+                for cert in certs(&config.tls_client_ca)? {
+                    validate_ca(&cert)?;
+                }
+                Ok(())
+            })(),
+        ),
+        item(
+            "SAE registry",
+            (|| {
+                let text = fs::read_to_string(&config.sae_map)?;
+                Registry::from_toml(&text)?;
+                let registry: SaeFile = toml::from_str(&text)?;
+                if !registry.sae.iter().any(|sae| !sae.identities.is_empty()) {
+                    return Err("no local client certificate identities configured".into());
+                }
+                Ok(())
+            })(),
+        ),
+    ]
+}
+
 fn check(config: &Settings) -> Result<()> {
     let mut errors = Vec::new();
-    let mut test = |name: &str, result: Result<()>| match result {
-        Ok(()) => println!("OK  {name}"),
-        Err(error) => {
-            println!("MISSING/INVALID  {name}: {error}");
-            errors.push(name.to_owned());
+    for item in check_report(config) {
+        match item.result {
+            Ok(()) => println!("OK  {}", item.name),
+            Err(error) => {
+                println!("MISSING/INVALID  {}: {error}", item.name);
+                errors.push(item.name);
+            }
         }
-    };
-    test(
-        "shared PSK",
-        (|| {
-            Psk::new(&fs::read(&config.psk_file)?)?;
-            Ok(())
-        })(),
-    );
-    test(
-        "server certificate and private key",
-        (|| validate_server(&certs(&config.tls_cert)?, &config.tls_key))(),
-    );
-    test(
-        "trusted client CAs",
-        (|| {
-            for cert in certs(&config.tls_client_ca)? {
-                validate_ca(&cert)?;
-            }
-            Ok(())
-        })(),
-    );
-    test(
-        "SAE registry",
-        (|| {
-            let text = fs::read_to_string(&config.sae_map)?;
-            Registry::from_toml(&text)?;
-            let registry: SaeFile = toml::from_str(&text)?;
-            if !registry.sae.iter().any(|sae| !sae.identities.is_empty()) {
-                return Err("no local client certificate identities configured".into());
-            }
-            Ok(())
-        })(),
-    );
+    }
     if !errors.is_empty() {
         return Err(format!("setup incomplete: {}", errors.join(", ")).into());
     }

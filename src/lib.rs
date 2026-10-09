@@ -1,19 +1,22 @@
 pub mod auth;
+pub mod events;
 pub mod keys;
+pub mod server;
+pub mod setup;
 pub mod tls;
 
 use auth::{PeerIdentity, Registry};
 use keys::{AccessError, Parties, Psk};
-use std::sync::Arc;
+use std::{sync::Arc, time::Instant};
 
 use axum::{
     Json, Router,
     extract::{
-        DefaultBodyLimit, FromRequestParts, Path, Query, State,
+        DefaultBodyLimit, FromRequestParts, MatchedPath, Path, Query, Request, State,
         rejection::{JsonRejection, QueryRejection},
     },
     http::{HeaderMap, HeaderValue, StatusCode, header::CACHE_CONTROL, request::Parts},
-    middleware,
+    middleware::{self, Next},
     response::{IntoResponse, Response},
     routing::get,
 };
@@ -28,6 +31,8 @@ pub struct Config {
     pub sae_id: String,
     pub kme_id: String,
     pub peer_kme_id: String,
+    /// Receives one event per handled request when set.
+    pub events: Option<events::EventSender>,
 }
 impl Config {
     pub fn new(psk: Psk) -> Self {
@@ -37,6 +42,7 @@ impl Config {
             sae_id: "sae-local".into(),
             kme_id: "kme-local".into(),
             peer_kme_id: "kme-peer".into(),
+            events: None,
         }
     }
 }
@@ -59,7 +65,38 @@ pub fn app(config: Config) -> Router {
                 response
             },
         ))
+        .layer(middleware::from_fn_with_state(config.clone(), record))
         .with_state(config)
+}
+
+/// Publish one event per request. Never reads the query string or body.
+async fn record(State(c): State<Config>, request: Request, next: Next) -> Response {
+    let Some(events) = c.events.clone() else {
+        return next.run(request).await;
+    };
+    let started = Instant::now();
+    let method = request.method().to_string();
+    let route = request
+        .extensions()
+        .get::<MatchedPath>()
+        .map_or("(unmatched)", MatchedPath::as_str)
+        .to_owned();
+    let caller_sae = c
+        .auth
+        .as_ref()
+        .zip(request.extensions().get::<PeerIdentity>().and_then(|p| p.0))
+        .and_then(|(registry, code)| registry.id(code).map(str::to_owned));
+    let response = next.run(request).await;
+    // A send error only means that nobody is listening.
+    let _ = events.send(events::Event {
+        time: time::OffsetDateTime::now_utc(),
+        caller_sae,
+        method,
+        route,
+        status: response.status().as_u16(),
+        duration_ms: started.elapsed().as_millis() as u64,
+    });
+    response
 }
 
 pub struct ApiError(StatusCode, String);

@@ -4,7 +4,7 @@ Status: **historical proposal, superseded.** The implemented command surface is
 `configure`, `serve`, `check`, `tls`, `cert`, `psk`, `sae` and `demo`; see
 [setup.md](setup.md). The original flag-only server invocation (`--listen`,
 `--tls-cert`, ..., `--no-sae-binding`, `--inspect-cert`) has been removed.
-The text below is the original rationale; its command names (`init`,
+A read-only desktop dashboard is described in [gui.md](gui.md). The text below is the original rationale; its command names (`init`,
 `gen-certs`, `inspect-cert`) were not adopted.
 
 ## Motivation

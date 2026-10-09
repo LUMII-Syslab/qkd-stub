@@ -33,10 +33,16 @@ jobs:
         run: cargo fmt --check
       - name: Clippy
         run: cargo clippy --locked --all-targets -- -D warnings
+      - name: Clippy (GUI)
+        if: runner.os == 'Windows'
+        run: cargo clippy --locked --all-targets --features gui -- -D warnings
       - name: Rust tests
         run: cargo test --locked
       - name: Build server
         run: cargo build --locked
+      - name: Build GUI
+        if: runner.os == 'Windows'
+        run: cargo build --locked --features gui
       - name: Setup scripts
         run: python tests/setup.py
       - name: HTTPS integration

@@ -66,7 +66,9 @@ qkd-stub --config qkd-demo/b.toml serve
 qkd-stub demo verify
 ```
 
-On Windows use `.\qkd-stub.exe`. `demo init` creates a `qkd-demo` directory in the
+On Windows use `.\qkd-stub.exe`; the release also contains `qkd-stub-gui.exe`, a
+[dashboard](docs/gui.md) that serves a configuration and shows client activity
+(`qkd-stub-gui --config qkd-demo/a.toml --start`). Provisioning stays in the CLI. `demo init` creates a `qkd-demo` directory in the
 **current working directory** (`--dir` changes it; an existing directory is refused)
 with a test CA, two server configurations (ports 8443 and 8444), a shared PSK, and
 client certificates for SAEs `A` and `B`. It holds private keys, so run it from a
@@ -104,7 +106,9 @@ machines. Each server may use its own TLS certificate and client CA. Details:
 Windows: [Windows quickstart](docs/windows.md). GitHub Actions runs the full test
 suite on Windows and Linux. The
 [signed Windows build workflow](docs/windows-signing.md) produces an x64
-`qkd-stub.exe`, with tagged builds stored in GitHub Releases after publication.
+`qkd-stub.exe` and `qkd-stub-gui.exe`, with tagged builds stored in GitHub Releases
+after publication. Build the dashboard from source with
+`cargo build --release --locked --features gui`.
 
 On Linux: Rust 1.89+, a C compiler, and, for the integration tests, OpenSSL 3,
 Python 3.11+, and curl. On Ubuntu 24.04 (verified on a fresh container):

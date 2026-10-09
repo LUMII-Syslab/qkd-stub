@@ -1,14 +1,7 @@
 use axum_server::Handle;
 use clap::Parser;
-use qkd_stub::{
-    Config, app,
-    auth::Registry,
-    keys::Psk,
-    tls::{self, IdentityAcceptor},
-};
-use std::{path::PathBuf, sync::Arc, time::Duration};
-
-mod setup;
+use qkd_stub::{server, setup};
+use std::{path::PathBuf, time::Duration};
 
 #[derive(Parser)]
 #[command(
@@ -34,18 +27,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let Some(settings) = setup::run(args.command, &args.config).await? else {
         return Ok(());
     };
-    let bytes =
-        std::fs::read(&settings.psk_file).map_err(|e| format!("cannot read PSK file: {e}"))?;
-    let psk = Psk::new(&bytes)?;
-    let registry = Arc::new(Registry::from_toml(&std::fs::read_to_string(
-        &settings.sae_map,
-    )?)?);
-    let tls = tls::config(
-        &settings.tls_cert,
-        &settings.tls_key,
-        Some(&settings.tls_client_ca),
-    )
-    .map_err(|e| format!("cannot load TLS configuration: {e}"))?;
     let handle = Handle::new();
     let shutdown = handle.clone();
     tokio::spawn(async move {
@@ -72,14 +53,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         "QKD test stub at https://{} (PSK-derived keys; certificate-based SAE authorization enabled)",
         settings.listen
     );
-    let mut config = Config::new(psk);
-    config.auth = Some(registry.clone());
-    config.kme_id = settings.kme_id;
-    config.peer_kme_id = settings.peer_kme_id;
-    axum_server::bind(settings.listen)
-        .acceptor(IdentityAcceptor::new(tls, Some(registry)))
-        .handle(handle)
-        .serve(app(config).into_make_service())
-        .await?;
+    server::serve(settings, handle, None)
+        .await
+        .map_err(|e| e.to_string())?;
     Ok(())
 }

@@ -27,6 +27,13 @@ installation, trusted client CAs, PSK import, SAE management, and file permissio
 Maintainers: see [Windows signing and releases](windows-signing.md) for Azure
 setup, manual builds and release storage.
 
+## Dashboard
+
+The release also contains `qkd-stub-gui.exe`, a window that shows the saved
+configuration, check results, SAEs, certificates, and live client requests while
+serving. For example, `.\qkd-stub-gui.exe --config qkd-demo/a.toml --start`.
+Provisioning remains in `qkd-stub.exe`. See [dashboard](gui.md) for details and limits.
+
 ## Developer prerequisites (source builds and tests)
 
 The remaining examples use **Command Prompt (cmd.exe)** from the repository root.
@@ -54,7 +61,10 @@ and behavior, not installation on a blank Windows machine.
 
 ```bat
 cargo build --release --locked
+cargo build --release --locked --features gui
 ```
+
+The second command also builds `target\release\qkd-stub-gui.exe`.
 
 Run the built executable exactly as the downloaded one, starting with
 `target\release\qkd-stub.exe demo init`. The `scripts\gen-*.bat` helpers create
@@ -69,8 +79,8 @@ quoted. Existing credentials are preserved: only `gen-certs.bat` accepts
 scripts\check-windows.bat
 ```
 
-This runs formatting, Clippy, Rust tests (including executable-only provisioning
-and demo verification), a debug build, setup-script checks, and
+This runs formatting, Clippy (also with the dashboard feature), Rust tests (including executable-only provisioning
+and demo verification), debug builds (with and without the dashboard), setup-script checks, and
 all three integration suites. It starts its own temporary endpoints and checks
 TLS 1.2/1.3, client-certificate authorization, encrypted ID derivation, both
 communication directions, restarts and graceful shutdown. It does not use or

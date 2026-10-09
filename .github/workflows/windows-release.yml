@@ -51,10 +51,12 @@ jobs:
           if ($env:GITHUB_REF_TYPE -eq 'tag' -and $env:GITHUB_REF_NAME -ne "v$version") {
             throw "Tag must match Cargo.toml version: v$version"
           }
-          cargo build --release --locked --target x86_64-pc-windows-msvc
+          cargo build --release --locked --target x86_64-pc-windows-msvc --features gui
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           New-Item -ItemType Directory out | Out-Null
-          Copy-Item target/x86_64-pc-windows-msvc/release/qkd-stub.exe out/qkd-stub.exe
+          foreach ($exe in 'qkd-stub.exe', 'qkd-stub-gui.exe') {
+            Copy-Item "target/x86_64-pc-windows-msvc/release/$exe" "out/$exe"
+          }
 
       - uses: azure/login@935127ca5bb3c4b02c9c2c10060028383878f33f # v3
         with:
@@ -62,7 +64,7 @@ jobs:
           tenant-id: ${{ vars.AZURE_TENANT_ID }}
           allow-no-subscriptions: true
 
-      - name: Sign executable
+      - name: Sign command-line executable
         uses: azure/artifact-signing-action@c0ae2c1d0c1847ab81ac0ab8521bee597cfedd30 # v2
         with:
           endpoint: ${{ vars.ARTIFACT_SIGNING_ENDPOINT }}
@@ -84,14 +86,38 @@ jobs:
           exclude-azure-developer-cli-credential: true
           exclude-interactive-browser-credential: true
 
-      - name: Verify signature, run executable and hash
+      - name: Sign GUI executable
+        uses: azure/artifact-signing-action@c0ae2c1d0c1847ab81ac0ab8521bee597cfedd30 # v2
+        with:
+          endpoint: ${{ vars.ARTIFACT_SIGNING_ENDPOINT }}
+          signing-account-name: ${{ vars.ARTIFACT_SIGNING_ACCOUNT }}
+          certificate-profile-name: ${{ vars.ARTIFACT_SIGNING_PROFILE }}
+          files: ${{ github.workspace }}\out\qkd-stub-gui.exe
+          file-digest: SHA256
+          timestamp-rfc3161: http://timestamp.acs.microsoft.com
+          timestamp-digest: SHA256
+          description: QKD endpoint simulator dashboard
+          exclude-environment-credential: true
+          exclude-workload-identity-credential: true
+          exclude-managed-identity-credential: true
+          exclude-shared-token-cache-credential: true
+          exclude-visual-studio-credential: true
+          exclude-visual-studio-code-credential: true
+          exclude-azure-cli-credential: false
+          exclude-azure-powershell-credential: true
+          exclude-azure-developer-cli-credential: true
+          exclude-interactive-browser-credential: true
+
+      - name: Verify signatures, run command-line executable and hash
         run: |
-          $signature = Get-AuthenticodeSignature out/qkd-stub.exe
-          if ($signature.Status -ne 'Valid' -or -not $signature.TimeStamperCertificate) {
-            throw "Expected a valid timestamped signature, got $($signature.Status)"
-          }
-          if (-not $signature.SignerCertificate.Subject.StartsWith("$env:SIGNER_SUBJECT,")) {
-            throw "Unexpected signer: $($signature.SignerCertificate.Subject)"
+          foreach ($exe in 'qkd-stub.exe', 'qkd-stub-gui.exe') {
+            $signature = Get-AuthenticodeSignature "out/$exe"
+            if ($signature.Status -ne 'Valid' -or -not $signature.TimeStamperCertificate) {
+              throw "Expected a valid timestamped signature on $exe, got $($signature.Status)"
+            }
+            if (-not $signature.SignerCertificate.Subject.StartsWith("$env:SIGNER_SUBJECT,")) {
+              throw "Unexpected signer for ${exe}: $($signature.SignerCertificate.Subject)"
+            }
           }
           & ./out/qkd-stub.exe --version
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
@@ -99,8 +125,11 @@ jobs:
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           & ./out/qkd-stub.exe --config "$env:RUNNER_TEMP/qkd-release-demo/a.toml" check
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          $hash = (Get-FileHash out/qkd-stub.exe -Algorithm SHA256).Hash.ToLowerInvariant()
-          "$hash  qkd-stub.exe" | Set-Content out/qkd-stub.exe.sha256 -Encoding ascii
+          # The GUI needs a display, so it is checked only for its signature here.
+          foreach ($exe in 'qkd-stub.exe', 'qkd-stub-gui.exe') {
+            $hash = (Get-FileHash "out/$exe" -Algorithm SHA256).Hash.ToLowerInvariant()
+            "$hash  $exe" | Set-Content "out/$exe.sha256" -Encoding ascii
+          }
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
@@ -114,10 +143,10 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          $notes = "``demo init`` creates a ``qkd-demo`` directory in the current working directory (change it with ``--dir``) and refuses to run if it exists. It holds test credentials, including private keys and the shared PSK. ``configure`` creates ``qkd-stub-data`` in the working directory."
+          $notes = "``qkd-stub.exe`` is the command-line tool; ``qkd-stub-gui.exe`` is a dashboard that serves a configuration and shows client activity. ``demo init`` creates a ``qkd-demo`` directory in the current working directory (change it with ``--dir``) and refuses to run if it exists. It holds test credentials, including private keys and the shared PSK. ``configure`` creates ``qkd-stub-data`` in the working directory."
           # The Linux workflow may have created the draft first; then only upload.
-          gh release create $env:GITHUB_REF_NAME out/qkd-stub.exe out/qkd-stub.exe.sha256 --verify-tag --draft --title "qkd-stub $env:GITHUB_REF_NAME" --notes $notes --generate-notes
+          gh release create $env:GITHUB_REF_NAME out/qkd-stub.exe out/qkd-stub.exe.sha256 out/qkd-stub-gui.exe out/qkd-stub-gui.exe.sha256 --verify-tag --draft --title "qkd-stub $env:GITHUB_REF_NAME" --notes $notes --generate-notes
           if ($LASTEXITCODE) {
-            gh release upload $env:GITHUB_REF_NAME out/qkd-stub.exe out/qkd-stub.exe.sha256
+            gh release upload $env:GITHUB_REF_NAME out/qkd-stub.exe out/qkd-stub.exe.sha256 out/qkd-stub-gui.exe out/qkd-stub-gui.exe.sha256
             if ($LASTEXITCODE) { exit $LASTEXITCODE }
           }
