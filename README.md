@@ -8,6 +8,18 @@ API without QKD hardware. Both endpoints derive matching keys from the same
 pre-shared key (PSK), providing computational rather than information-theoretic
 security.
 
+**Contents**
+
+- [Quickstart on Windows](#quickstart-on-windows)
+- [Quickstart on Linux](#quickstart-on-linux)
+- [Provisioning your own endpoints](#provisioning-your-own-endpoints)
+- [Building and testing from source](#building-and-testing-from-source)
+- [Key IDs and derivation](#key-ids-and-derivation)
+- [Certificate-based SAE authorization](#certificate-based-sae-authorization)
+- [Command-line interface](#command-line-interface)
+- [API](#api)
+- [More](#more)
+
 **Main idea.** Give both stubs the same pre-shared key (PSK). Each key ID is a
 UUID that encrypts the authorized SAE pair, a random seed, the key length, and a
 checksum. Both stubs derive the same key from the PSK and the full UUID, without
@@ -48,34 +60,57 @@ not information-theoretic security or a proof of the whole service. The
 explains why HKDF pseudorandomness, rather than SHA preimage resistance alone,
 is the relevant assumption.
 
-## Quickstart
+## Quickstart on Windows
 
-Download the signed `qkd-stub.exe` (Windows) or the static
-`qkd-stub-x86_64-linux.tar.gz` (Linux; verification in
-[Linux releases](docs/linux-release.md)) from
-[GitHub Releases](https://github.com/LUMII-Syslab/qkd-stub/releases), or build
-with `cargo build --release --locked` (`target/release/qkd-stub`).
-No OpenSSL, Python, or source checkout is needed to run or provision endpoints.
+Download the signed `qkd-stub.exe` and `qkd-stub-gui.exe` from
+[GitHub Releases](https://github.com/LUMII-Syslab/qkd-stub/releases) (signature
+and checksum checks: [Windows signing](docs/windows-signing.md)). No OpenSSL, Python,
+Rust, or source checkout is needed. In PowerShell, from the directory containing them:
 
-```sh
-qkd-stub demo init
-qkd-stub --config qkd-demo/a.toml serve
+```powershell
+.\qkd-stub.exe demo init
+.\qkd-stub.exe --config qkd-demo/a.toml serve
 # In a second terminal:
-qkd-stub --config qkd-demo/b.toml serve
+.\qkd-stub.exe --config qkd-demo/b.toml serve
 # In a third terminal:
-qkd-stub demo verify
+.\qkd-stub.exe demo verify
 ```
 
-On Windows use `.\qkd-stub.exe`; the release also contains `qkd-stub-gui.exe`, a
-[dashboard](docs/gui.md) that serves a configuration and shows client activity
-(`qkd-stub-gui --config qkd-demo/a.toml --start`). Provisioning stays in the CLI. `demo init` creates a `qkd-demo` directory in the
-**current working directory** (`--dir` changes it; an existing directory is refused)
-with a test CA, two server configurations (ports 8443 and 8444), a shared PSK, and
-client certificates for SAEs `A` and `B`. It holds private keys, so run it from a
-private location. `demo verify` retrieves matching keys in both directions over
-mTLS.
+`demo init` creates a `qkd-demo` directory in the **current working directory**
+(`--dir` changes it; an existing directory is refused) with a test CA, two server
+configurations (ports 8443 and 8444), a shared PSK, and client certificates for SAEs
+`A` and `B`. It holds private keys, so run it from a private location. `demo verify`
+retrieves matching keys in both directions over mTLS. Stop a server with Ctrl-C or
+Ctrl-Break. Windows' bundled Schannel `curl` may not accept PEM client certificates,
+so use `demo verify` rather than the `curl` example below.
 
-A requests a key for B at the first server, then B retrieves it at the second:
+`qkd-stub-gui.exe` is a [dashboard](docs/gui.md) that serves a configuration and shows
+client activity: `.\qkd-stub-gui.exe --config qkd-demo/a.toml --start`. Provisioning
+stays in the command-line tool. More: [Windows quickstart](docs/windows.md).
+
+## Quickstart on Linux
+
+Download `qkd-stub-x86_64-linux.tar.gz`, a static build that runs on any x86-64
+distribution, from [GitHub Releases](https://github.com/LUMII-Syslab/qkd-stub/releases)
+and verify it as described in [Linux releases](docs/linux-release.md). Or build with
+`cargo build --release --locked` (`target/release/qkd-stub`). No OpenSSL, Python, or
+source checkout is needed to run or provision endpoints. The tarball contains the
+command-line tool only; the dashboard is Windows-only in releases and is built from
+source with `--features gui`.
+
+```sh
+tar -xzf qkd-stub-x86_64-linux.tar.gz
+./qkd-stub demo init
+./qkd-stub --config qkd-demo/a.toml serve
+# In a second terminal:
+./qkd-stub --config qkd-demo/b.toml serve
+# In a third terminal:
+./qkd-stub demo verify
+```
+
+`demo init` creates the `qkd-demo` directory exactly as described for Windows above.
+Stop a server with Ctrl-C or SIGTERM. A requests a key for B at the first server,
+then B retrieves it at the second:
 
 ```sh
 curl --fail --cacert qkd-demo/ca.pem \
@@ -87,8 +122,7 @@ curl --fail --cacert qkd-demo/ca.pem \
   "https://localhost:8444/api/v1/keys/A/dec_keys?key_ID=$KEY_ID"
 ```
 
-Stop with Ctrl-C or SIGTERM (Ctrl-Break on Windows). Windows' bundled Schannel
-curl may not accept PEM client certificates; use `demo verify` there.
+## Provisioning your own endpoints
 
 For device-style provisioning with your own CA, start with `qkd-stub configure`.
 It generates a local private key and CSR, saves the configuration, and can resume
